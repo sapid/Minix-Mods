@@ -19,4 +19,4 @@ outtofile:
 	cat example-out.txt
 
 clean:
-	rm fork_test pipe_test in_from_file out_to_file
+	rm fork_test pipe_test in_from_file out_to_file example-out.txt
