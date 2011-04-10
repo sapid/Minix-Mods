@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
-int *return_status;
 int main(int argc, char *argv[], char *envp[]) {
 	int fd[2];
 	printf("$ \n");
