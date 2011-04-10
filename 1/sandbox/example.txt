@@ -1,0 +1,2 @@
+This is example data to be piped out.
+End of file.
