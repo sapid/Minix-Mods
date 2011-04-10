@@ -1,4 +1,4 @@
-all: forktest pipetest infromfile
+all: forktest pipetest infromfile outtofile
 
 
 forktest:
@@ -13,5 +13,10 @@ infromfile:
 	gcc infromfile.c -o in_from_file
 	./in_from_file
 
+outtofile:
+	gcc outtofile.c -o out_to_file
+	./out_to_file
+	cat example-out.txt
+
 clean:
-	rm fork_test pipe_test in_from_file
+	rm fork_test pipe_test in_from_file out_to_file
