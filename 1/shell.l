@@ -6,12 +6,12 @@
 
 %}
 
-WORD        [a-zA-Z0-9\/\.-]+
+WORD              [a-zA-Z0-9\/\.-]+
 
 %%
 
-{WORD}            { return yylval_token(TOK_WORD); }
 "exit"            { return yylval_token(TOK_EXIT); }
+{WORD}            { return yylval_token(TOK_WORD); }
 "("               { return yylval_token('('); }
 ")"               { return yylval_token(')'); }
 ">"               { return yylval_token('>'); }
