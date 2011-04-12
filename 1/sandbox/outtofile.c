@@ -1,5 +1,4 @@
 /* Author: Will Crawford <wacrawfo@ucsc.edu> */
-/* Deprecated by a change in multipipetest.c */
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
