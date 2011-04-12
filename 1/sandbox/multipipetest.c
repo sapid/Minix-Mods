@@ -3,60 +3,58 @@
 #include <sys/types.h>
 #include <unistd.h>
 int *return_status;
+int pid;
 void pipe_child(int *oldPipe, int *newPipe){
-	pipe(newPipe);
-	pid = fork();
-	if(pid){
-		// In parent. Shuffle the pipes for the next child.
-		oldPipe[0] = newPipe[0]; 
-		oldPipe[1] = newPipe[1];
-		return;
-	}
-	else {
-		// In child.
-		close(newPipe[0]);
-		close(0);
-		dup(oldPipe[0]);
-		close(1);
-		dup(newPipe[1]);
-		// File descriptor exchange complete. Exec!
-		return;
-	}
-}
-void last_child(int *oldPipe, int *newPipe){
-	pid = fork();
-	if(pid){
-		// In parent.
-		return;
-	}
-	else {
-		close(newPipe[0]);
-		close(0);
-		dup(oldPipe[0]);
-		close(1);
-		dup(newPipe[1]);
-		return;
-	}
+   pipe(newPipe);
+   pid = fork();
+   if(pid){
+      // In parent. Shuffle the pipes for the next child.
+      close(oldPipe[0]);
+      oldPipe[0] = newPipe[0]; 
+      close(oldPipe[1]);
+      oldPipe[1] = newPipe[1];
+      return;
+   }
+   else {
+      // In child.
+      //fprintf(stderr, "In child.\n");
+      if(oldPipe[0]){
+         //fprintf(stderr, "Closing stdin.\n");
+         close(newPipe[0]);
+         close(0);
+         dup(oldPipe[0]);
+         //close(oldPipe[0]);
+      }
+      if(newPipe[0]){
+         //fprintf(stderr, "Closing stdout.\n");
+         close(1);
+         dup(newPipe[1]);
+         //close(newPipe[1]);
+      }
+      // File descriptor exchange complete. Exec!
+      return;
+   }
 }
 int main(int argc, char *argv[], char *envp[]) {
-	int oldPipe[2] = {0, 1};
-	int newPipe[2];
-	printf("$ \n");
-	if(pipe(fd)){
-		fprintf(stderr, "Pipe failed! How mysterious.\n");
-		return 1;
-	}
-	int pid;
-	// For the pipe test, the parent will feed the child.
-	// In live shell usage, this next line won't exist.
-	oldPipe[0] = 1;
-	for(int i; i < 4; i++){
-		if(pid)
-			pipe_child(oldPipe, newPipe);
-	}
-
-	if(pid){
-		wait(return_status);
-	}
-	return 0;
+   int oldPipe[2]; 
+   int newPipe[2];
+   printf("$ \n");
+   // For the pipe test, the parent will feed the child.
+   // In live shell usage, this next line won't exist.
+   pid = 1;
+   int i;
+   for(i = 0; i < 4; i++){
+      if(pid)
+         pipe(newPipe);
+         pipe_child(oldPipe, newPipe);
+   }
+   newPipe[0] = 0;
+   newPipe[1] = 0;
+   pipe_child(oldPipe, newPipe); // This child should print to stdout.
+   if(pid)
+      printf("Test.\n");
+   if(pid){
+      wait(return_status);
+   }
+   return 0;
 }
