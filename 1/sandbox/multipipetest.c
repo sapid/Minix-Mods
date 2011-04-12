@@ -48,10 +48,9 @@ int main(int argc, char *argv[], char *envp[]) {
    newPipe[0] = 0;
    newPipe[1] = 0;
    pipe_child(oldPipe, newPipe); // This child should print to stdout.
-   if(pid)
-      printf("Multi-pipe test successful.\n");
    if(pid){
-      wait(return_status);
+      printf("Multi-pipe test successful.\n");
+      while(waitpid(-1,return_status) != -1){}; // Wait until all processes finish.
    }
    return 0;
 }
