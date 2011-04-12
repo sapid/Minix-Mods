@@ -13,6 +13,10 @@ infromfile:
 	gcc infromfile.c -o in_from_file
 	./in_from_file
 
+exectest:
+	gcc exectest.c -o exec_test
+	./exec_test
+
 outtofile:
 	gcc outtofile.c -o out_to_file
 	./out_to_file
