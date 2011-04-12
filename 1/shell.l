@@ -6,24 +6,23 @@
 
 %}
 
-WORD			[a-zA-Z0-9\/\.-]+
+WORD        [a-zA-Z0-9\/\.-]+
 
 %%
 
-{WORD}				{ return yylval_token(TOK_WORD); }
-"exit"				{ return yylval_token(TOK_EXIT); }
-"("					{ return yylval_token('('); }
-")"					{ return yylval_token(')'); }
-">"					{ return yylval_token('>'); }
-"<"					{ return yylval_token('<'); }
-"|"					{ return yylval_token('|'); }
-"&"					{ return yylval_token('&'); }
-";"					{ return yylval_token(';'); }
-"*"					{ return yylval_token('*'); }
-{WORD}				{ return yylval_token(TOK_WORD);}
-"\n" 				{ return yylval_token(TOK_NEWLINE; }
-[ \t]+				{ }
-.					{ }
+{WORD}            { return yylval_token(TOK_WORD); }
+"exit"            { return yylval_token(TOK_EXIT); }
+"("               { return yylval_token('('); }
+")"               { return yylval_token(')'); }
+">"               { return yylval_token('>'); }
+"<"               { return yylval_token('<'); }
+"|"               { return yylval_token('|'); }
+"&"               { return yylval_token('&'); }
+";"               { return yylval_token(';'); }
+"*"               { return yylval_token('*'); }
+"\n"              { return yylval_token(TOK_NEWLINE; }
+[ \t]+            { }
+.                 { }
 
 %%
 
