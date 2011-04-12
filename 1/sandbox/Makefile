@@ -18,5 +18,9 @@ outtofile:
 	./out_to_file
 	cat example-out.txt
 
+multipipetest:
+	gcc multipipetest.c -o multi_pipe_test
+	./multi_pipe_test
+
 clean:
-	rm fork_test pipe_test in_from_file out_to_file example-out.txt
+	rm *_*
