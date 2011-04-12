@@ -7,12 +7,12 @@ int main(int argc, char *argv[], char *envp[]) {
 	printf("$ \n");
 	int pid = fork();
 	if(pid){
-		// In parent.
+		/* In parent. */
 		printf("Waiting for process...\n");
 		pid = wait(return_status);
 		printf("Returned from process.\n");
 	} else {
-		// In child.
+		/* In child. */
 		printf("Child reporting.\n");
       printf("Fork test successful.\n");
 	}

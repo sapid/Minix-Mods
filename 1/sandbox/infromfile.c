@@ -8,11 +8,11 @@ int main(int argc, char *argv[], char *envp[]) {
 	int fp = open("./example.txt");
 	int pid = fork();
 	if(pid){
-		// In parent.
+		/* In parent. */
 		close(fp);
 		wait(return_status);
 	} else {
-		// In child.
+		/* In child. */
 		close(0);
 		dup(fp);
 		int c;

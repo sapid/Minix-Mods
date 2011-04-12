@@ -18,7 +18,6 @@ void execute(void){
       int exec_fail = execvp("ls", arg);
       if(exec_fail == -1){
          fprintf(stderr, "Child: Execution of %s failed with errno %d.\n", arg[0], errno);
-         //fprintf(stderr, "Child: does not exist.");
          exit(1);
       }
 

@@ -9,11 +9,11 @@ int main(int argc, char *argv[], char *envp[]) {
 	int fp = open("./example_out.txt", O_CREAT | O_WRONLY, 0755);
 	int pid = fork();
 	if(pid){
-		// In parent.
+		/* In parent. */
 		close(fp);
 		wait(return_status);
 	} else {
-		// In child.
+		/* In child. */
 		close(1);
 		dup(fp);
 		close(fp);

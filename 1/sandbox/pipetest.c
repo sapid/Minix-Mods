@@ -11,14 +11,14 @@ int main(int argc, char *argv[], char *envp[]) {
 	}
 	int pid = fork();
 	if(pid){
-		// In parent.
+		/* In parent. */
 		close(fd[0]);
 		close(1);
 		dup(fd[1]);
 		close(fd[1]);
 		printf("Talking through pipe - pipe test successful\n");
 	} else {
-		// In child.
+		/* In child. */
 		close(fd[1]);
 		close(0);
 		dup(fd[0]);
