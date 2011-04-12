@@ -6,7 +6,7 @@
 int *return_status;
 int main(int argc, char *argv[], char *envp[]) {
 	printf("$ \n");
-	int fp = open("./example-out.txt", O_CREAT | O_WRONLY, 0755);
+	int fp = open("./example_out.txt", O_CREAT | O_WRONLY, 0755);
 	int pid = fork();
 	if(pid){
 		// In parent.
@@ -18,7 +18,7 @@ int main(int argc, char *argv[], char *envp[]) {
 		dup(fp);
 		close(fp);
 		int c;
-		printf("Test successful.\n");
+		printf("Print to file test successful.\n");
 	}
 	return 0;
 }

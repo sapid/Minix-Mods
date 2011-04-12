@@ -15,12 +15,14 @@ int main(int argc, char *argv[], char *envp[]) {
 		close(fd[0]);
 		close(1);
 		dup(fd[1]);
-		printf("Talking through pipe.\n");
+		close(fd[1]);
+		printf("Talking through pipe - pipe test successful\n");
 	} else {
 		// In child.
 		close(fd[1]);
 		close(0);
 		dup(fd[0]);
+		close(fd[0]);
 		int c;
 		while((c = getchar()) != EOF)
 			putchar(c);

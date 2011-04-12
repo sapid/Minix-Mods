@@ -17,19 +17,16 @@ void pipe_child(int *oldPipe, int *newPipe){
    }
    else {
       // In child.
-      //fprintf(stderr, "In child.\n");
       if(oldPipe[0]){
-         //fprintf(stderr, "Closing stdin.\n");
          close(newPipe[0]);
          close(0);
          dup(oldPipe[0]);
-         //close(oldPipe[0]);
+         close(oldPipe[0]);
       }
       if(newPipe[0]){
-         //fprintf(stderr, "Closing stdout.\n");
          close(1);
          dup(newPipe[1]);
-         //close(newPipe[1]);
+         close(newPipe[1]);
       }
       // File descriptor exchange complete. Exec!
       return;
@@ -52,7 +49,7 @@ int main(int argc, char *argv[], char *envp[]) {
    newPipe[1] = 0;
    pipe_child(oldPipe, newPipe); // This child should print to stdout.
    if(pid)
-      printf("Test.\n");
+      printf("Multi-pipe test successful.\n");
    if(pid){
       wait(return_status);
    }

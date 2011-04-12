@@ -14,6 +14,7 @@ int main(int argc, char *argv[], char *envp[]) {
 	} else {
 		// In child.
 		printf("Child reporting.\n");
+      printf("Fork test successful.\n");
 	}
 	return 0;
 }

@@ -16,7 +16,7 @@ infromfile:
 outtofile:
 	gcc outtofile.c -o out_to_file
 	./out_to_file
-	cat example-out.txt
+	cat example_out.txt
 
 multipipetest:
 	gcc multipipetest.c -o multi_pipe_test
