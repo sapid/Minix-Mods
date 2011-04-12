@@ -10,7 +10,7 @@ NODEPS = clean spotless
 EXE = shell
 DEPSFILE = Makefile.deps
 HSOURCES = 
-CSOURCES = shell.c
+CSOURCES = myshell.c
 LSOURCES = shell.l
 YSOURCES = shell.y
 CLGEN	 = shell.flex.c
@@ -18,8 +18,8 @@ HYGEN    = parser.h
 CYGEN	 = shell.bison.c
 CGENS    = ${CLGEN} ${CYGEN}
 ALLGENS	 = ${HYGEN} ${CGENS}
-ALLCSRC	 = ${CSOURCES} ${CLGEN} # ${CGENS}
-COJBECTS = ${ALLCSRC:.c=.o}
+ALLCSRC	 = ${CSOURCES} ${CGENS}
+COBJECTS = ${ALLCSRC:.c=.o}
 CFLAGS	 = -g -Wall
 
 all: ${EXE}
@@ -29,7 +29,7 @@ ${DEPSFILE}:
 	${MAKE} --no-print-directory deps
 
 ${EXE}: ${COBJECTS}
-	${CC} ${CFLAGS} -o $@ shell.c ${COBJECTS}
+	${CC} ${CFLAGS} -o $@ myshell.c ${COBJECTS}
 	
 deps : ${ALLCSRC}
 	${CC} -MM ${ALLCSRC} > Makefile.deps
@@ -38,8 +38,8 @@ ${CLGEN} : ${LSOURCES}
 	flex -o${CLGEN} ${LSOURCES} 2> ${LSOURCES:.l=.out}
 
 ${CYGEN} ${HYGEN} : ${YSOURCES}
-	bison -dtv -o${CYGEN} --defines=${HYGEN} ${YSOURCES} \
-	2> ${YSOURCES:.y=.out}
+#	bison -dtv -o${CYGEN} --defines=${HYGEN} ${YSOURCES} \
+#	2> ${YSOURCES:.y=.out}
 
 clean :
 	rm -f ./*.o
