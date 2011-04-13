@@ -13,12 +13,7 @@ DEPSFILE = Makefile.deps
 HSOURCES = 
 CSOURCES =
 LSOURCES = shell.l
-YSOURCES = shell.y
 CLGEN	 = shell.lex.c
-HYGEN    = #shell.yacc.h
-CYGEN	 = #shell.yacc.c
-CGENS    = ${CLGEN} ${CYGEN}
-ALLGENS	 = ${HYGEN} ${CGENS}
 ALLCSRC	 = ${CSOURCES} ${CGENS}
 COBJECTS = ${ALLCSRC:.c=.o}
 CFLAGS	 = -g -Wall
@@ -38,15 +33,11 @@ deps : ${ALLCSRC}
 ${CLGEN} : ${LSOURCES}
 	lex -o${CLGEN} ${LSOURCES} 2> ${LSOURCES:.l=.out}
 
-${CYGEN} ${HYGEN} : ${YSOURCES}
-	yacc -dtv -o${CYGEN} --defines=${HYGEN} ${YSOURCES} \
-	2> ${YSOURCES:.y=.out}
-
 clean :
 	rm -f ./*.o
 
 spotless : clean
-	rm -f ${EXE} ${ALLGENS} ${DEPSFILE} lex.backup
+	rm -f ${EXE} ${CLGEN} ${DEPSFILE} lex.backup
 	rm -f ./*.out ./*.output
 
 again : spotless
