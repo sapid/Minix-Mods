@@ -16,7 +16,7 @@ LSOURCES = shell.l
 CLGEN	 = shell.lex.c
 ALLCSRC	 = ${CSOURCES} ${CGENS}
 COBJECTS = ${ALLCSRC:.c=.o}
-CFLAGS	 = -g -Wall
+CFLAGS	 = -g -Wall -L/usr/lib -lfl
 
 all: ${EXE}
 
