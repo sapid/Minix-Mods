@@ -8,14 +8,15 @@
 CC = cc
 NODEPS = clean spotless
 EXE = shell
+EXESRC	 = myshell.c
 DEPSFILE = Makefile.deps
 HSOURCES = 
-CSOURCES = myshell.c
+CSOURCES =
 LSOURCES = shell.l
 YSOURCES = shell.y
-CLGEN	 = shell.flex.c
-HYGEN    = parser.h
-CYGEN	 = shell.bison.c
+CLGEN	 = shell.lex.c
+HYGEN    = #shell.yacc.h
+CYGEN	 = #shell.yacc.c
 CGENS    = ${CLGEN} ${CYGEN}
 ALLGENS	 = ${HYGEN} ${CGENS}
 ALLCSRC	 = ${CSOURCES} ${CGENS}
@@ -29,17 +30,17 @@ ${DEPSFILE}:
 	${MAKE} --no-print-directory deps
 
 ${EXE}: ${COBJECTS}
-	${CC} ${CFLAGS} -o $@ myshell.c ${COBJECTS}
+	${CC} ${CFLAGS} -o $@ ${EXESRC} ${COBJECTS}
 	
 deps : ${ALLCSRC}
 	${CC} -MM ${ALLCSRC} > Makefile.deps
 
 ${CLGEN} : ${LSOURCES}
-	flex -o${CLGEN} ${LSOURCES} 2> ${LSOURCES:.l=.out}
+	lex -o${CLGEN} ${LSOURCES} 2> ${LSOURCES:.l=.out}
 
 ${CYGEN} ${HYGEN} : ${YSOURCES}
-#	bison -dtv -o${CYGEN} --defines=${HYGEN} ${YSOURCES} \
-#	2> ${YSOURCES:.y=.out}
+	yacc -dtv -o${CYGEN} --defines=${HYGEN} ${YSOURCES} \
+	2> ${YSOURCES:.y=.out}
 
 clean :
 	rm -f ./*.o
@@ -50,7 +51,3 @@ spotless : clean
 
 again : spotless
 	${MAKE} all
-
-ifeq "${filter ${NODEPS}, ${MAKECMDGOALS}}" ""
-include ${DEPSFILE}
-endif
