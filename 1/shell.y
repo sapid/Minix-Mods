@@ -4,18 +4,21 @@
 %}
 
 %error-verbose
-%token TOK_WORD TOK_EXIT TOK_NEWLINE TOK_EOF
-%start 
+%token TOK_WORD TOK_EXIT TOK_NEWLINE
+%start sentence
 
 %%
 
-sentence : exit
+sentence : exit                  { exit(0); }
+         | exit ';'              { exit(0); }
+         | command               { }
          ;
 
-command  : clause ';'
-         | clause TOK_NEWLINE
-         | 
+command  : clause ';'            { }
+         | command clause        { }
+         | clause                { }
          ;
+
 
 pipe     : clause '|'
          | clause_w '|'
