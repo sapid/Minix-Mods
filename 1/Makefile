@@ -1,44 +1,24 @@
-# Makefile heavily refactored from some of Wesley Mackey's code
 # Author: Will Crawford <wacrawfo@ucsc.edu>
 #	make			makes the shell
 #	make clean		removes all object files
 #	make spotless	as clean; also executables and generated files
 #	make again		spotless, then all
 
-CC = cc
-NODEPS = clean spotless
-EXE = shell
-EXESRC	 = myshell.c
-DEPSFILE = Makefile.deps
-HSOURCES = 
-CSOURCES =
-LSOURCES = shell.l
-CLGEN	 = shell.lex.c
-ALLCSRC	 = ${CSOURCES} ${CGENS}
-COBJECTS = ${ALLCSRC:.c=.o}
-CFLAGS	 = -g -Wall -L/usr/lib -lfl
+shell: dshell.c dlex.c
+	cc -g -Wall -o shell dshell.c dlex.c
 
-all: ${EXE}
-
-${DEPSFILE}:
-	@ touch ${DEPSFILE}
-	${MAKE} --no-print-directory deps
-
-${EXE}: ${COBJECTS}
-	${CC} ${CFLAGS} -o $@ ${EXESRC} ${COBJECTS}
-	
-deps : ${ALLCSRC}
-	${CC} -MM ${ALLCSRC} > Makefile.deps
-
-${CLGEN} : ${LSOURCES}
-	lex -o${CLGEN} ${LSOURCES} 2> ${LSOURCES:.l=.out}
+dlex.c : dlex.l
+	lex -odlex.c dlex.l 2> dlex.out
+	sed '3s/.*/#define _POSIX_SOURCE/' dlex.c > dlex.c.tmp
+	sed '7s/.*/#include<stdio.h>/' dlex.c.tmp > dlex.c
+	rm dlex.c.tmp
 
 clean :
-	rm -f ./*.o
+	rm -f dlex.c dslex.out
+	rm -rf dshell.dSYM
 
 spotless : clean
-	rm -f ${EXE} ${CLGEN} ${DEPSFILE} lex.backup
-	rm -f ./*.out ./*.output
+	rm -f shell
 
 again : spotless
-	${MAKE} all
+	${MAKE} shell
