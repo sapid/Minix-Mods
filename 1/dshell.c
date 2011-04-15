@@ -38,16 +38,18 @@ int main(int argc, char *argv[], char *envp[]) {
       }
       if(error_found)
          continue;
-      for(i = 1;cmds[i] != -1 || cmds[i] != -2; i+=2){
-         switch(cmds[i]{
-            case -10:
+      /* -1 is EOl. -2 is ; */
+      for(i = 1;cmds[i] != -1 || cmds[i] != -2; i+=2){ 
+         switch(cmds[i]){
+            case -10: /* -10 is < */
                redir_in = 1;
-               break;
+               break; /* -11 is > */
             case -11:
                redir_out = 1;
                break;
-            case -12:
+            case -12: /* -12 is | */
                pipe_count++;
+               break;
          }
          
          }
