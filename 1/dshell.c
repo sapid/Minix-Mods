@@ -4,72 +4,34 @@
 #include <errno.h>
 #include <string.h>
 
+extern int *cmds;
 extern char **getline(void);
-int redir_in;
-int redir_out;
 int pipe_count;
-int word_op;
-int execute_now;
+extern int operror;
 int error_found;
+extern int cmdcount;
 
-int adj_op_check(void){
-   if(word_op){
-      fprintf(stderr, "Syntax error: adjacent operators detected.\n");
-      return 1;
-   }
-   return word_op++;
-}
-
-int op_check(char *arg){
-   if(!(strcmp(arg, "<"))){
-     if(adj_op_check())
-        return 1;
-     if(redir_in){
-        fprintf(stderr, "Syntax error: detected two or more '<'\n");
-        return 1;
-     }
-     redir_in++;
-   }
-   if(!(strcmp(arg, ">"))){
-      if(adj_op_check())
-         return 1;
-      if(redir_in){
-         fprintf(stderr, "Syntax error: detected two or more '>'\n");
-         return 1;
-      }
-      redir_out++;
-   }
-   if(!(strcmp(arg, ")")) || !(strcmp(arg, "("))){
-      fprintf(stderr, "Syntax error: parentheses not supported.");
-      return 1;
-   }
-   if(!(strcmp(arg, "|"))){
-      if(adj_op_check())
-         return 1;
-      pipe_count++;
-   }
-   if(!(strcmp(arg, ";")))
-      execute_now = 1;
-   word_op = 0;
-   return 0;
-}
 
 int main(int argc, char *argv[], char *envp[]) {
   int i;
   char **args; 
 
-  while(1) {
-    word_op = pipe_count = redir_in = redir_out = execute_now = 0;
-    printf("dShell$ ");
+  for(;;) {
+    pipe_count = 0;
+    printf(" dShell$ ");
     args = getline();
-    for(i = 0; args[i] != NULL; i++) {
-      if(op_check(args[i]))
-         break;
+    if(operror)
+      continue;
+    for(i = 1; args[i] != NULL; i++) {
       printf("Argument %d: %s\n", i, args[i]);
+    }
+    printf("Arg loop complete.\n");
+    fflush(stdout);
+    for(i = 0; cmds[i] != -1; i++) {
+      printf("cmds[%d]: %d\n", i, cmds[i]);
     }
     if(error_found)
       continue;
-
   }
   return 0;
 }
