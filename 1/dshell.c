@@ -4,26 +4,30 @@
 #include <errno.h>
 #include <string.h>
 
-extern int *cmds;
+int cmds[32];
+extern char** _args;
 extern char **getline(void);
 int pipe_count;
 extern int operror;
 int error_found;
-extern int cmdcount;
+int cmd_count;
 
 
 int main(int argc, char *argv[], char *envp[]) {
   int i;
-  char **args; 
-
+  int fd[2];
+  cmd_count = 0;
   for(;;) {
     pipe_count = 0;
+    fd[1] = 0;
+    fd[2] = 0;
     printf(" dShell$ ");
-    args = getline();
+    getline();
+    cmds[cmd_count+1] = -1;
     if(operror)
       continue;
-    for(i = 1; args[i] != NULL; i++) {
-      printf("Argument %d: %s\n", i, args[i]);
+    for(i = 1; _args[i] != NULL; i++) {
+      printf("Argument %d: %s\n", i, _args[i]);
     }
     printf("Arg loop complete.\n");
     fflush(stdout);
@@ -32,6 +36,12 @@ int main(int argc, char *argv[], char *envp[]) {
     }
     if(error_found)
       continue;
+    /*for(i = 1;cmds[i] != -1; i+=2){
+      while(strcmp(_args[cmds[i]], ";")){
+         --i;
+         
+      }
+    }*/
   }
   return 0;
 }
