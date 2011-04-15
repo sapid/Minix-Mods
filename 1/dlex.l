@@ -2,23 +2,29 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-/*#define YYSTYPE char** */
-
-
+#include <stdlib.h>
 
 int _numargs = 200;
-char *_args[256];
+char **_args;
 extern int *cmds;
 int _argcount = 0;
 extern int cmd_count;
+extern int pipe_count;
 int _wordop = 0;
 int operror = 0;
-extern int pipe_count;
 int redir_in;
 int redir_out;
 void add_arg(void);
 void new_word(void);
-void new_op(void);
+
+/* Notes for new_op:
+-1 EOL
+-2 ;
+-10 <
+-11 >
+-12 |
+*/
+void new_op(int);
 void new_semicolon(void);
 %}
 %option noyywrap
@@ -31,7 +37,7 @@ WORD [a-zA-Z0-9\/\.-]+
 BADOP [()]
 
 %%
-  _argcount = _wordop = cmd_count = operror = 0; _args[0] = NULL;
+  _argcount = _wordop = cmd_count = pipe_count = operror = 0; 
   redir_in = redir_out = 0;
 exit                 {  if(!_wordop)
                            exit(1); /* Kludge. */
@@ -43,7 +49,7 @@ exit                 {  if(!_wordop)
                         add_arg();
                      }
 [>]                  {
-                        new_op();
+                        new_op(-11);
                         add_arg();
                         if(redir_out){
                            fprintf(stderr, "Syntax error: detected two or more '>'\n");
@@ -51,7 +57,7 @@ exit                 {  if(!_wordop)
                         } else redir_out = 1;
                      }
 [<]                  {
-                        new_op();
+                        new_op(-10);
                         add_arg();
                         if(pipe_count){
                            fprintf(stderr, "Syntax error: detected pipe before '<'.\n");
@@ -63,7 +69,7 @@ exit                 {  if(!_wordop)
                         } else redir_in = 1;
                      }
 [|]                  {
-                        new_op();
+                        new_op(-12);
                         add_arg();
                         pipe_count++;
                         if(redir_out){
@@ -80,7 +86,7 @@ exit                 {  if(!_wordop)
                      }
 
 
-\n                    { return 1; }
+\n                    {cmds[cmd_count + 1] = -1; return 1; }
 
 [ \t]+               {}
 
@@ -97,11 +103,11 @@ void add_arg(void){
    }
 }
 
-void new_op(void){
+void new_op(int sigil){
    if(_wordop){
       _wordop = 0;
       _args[_argcount++] = NULL;
-      cmds[cmd_count++] = _argcount;
+      cmds[cmd_count++] = sigil;
       cmds[cmd_count] = -1;
    } else {
       fprintf(stderr, "Syntax error: adjacent operators detected.\n");
@@ -113,8 +119,7 @@ void new_word(void){
    if(!_wordop){
       _wordop = 1;
       _args[_argcount++] = NULL;
-      cmds[cmd_count] = _argcount;
-      cmd_count += 1;
+      cmds[cmd_count++] = _argcount;
       cmds[cmd_count] = -1;
    }
 }
@@ -123,8 +128,9 @@ void new_semicolon(void){
    if(_wordop){
       _wordop = 1;
       _args[_argcount++] = NULL;
-      cmds[cmd_count++] = _argcount;
+      cmds[cmd_count++] = -2;
       cmds[cmd_count] = -1;
+      redir_in = redir_out = 0;
       return;
    } else {
       fprintf(stderr, "Syntax error: did not expect semi-colon after operator.\n");

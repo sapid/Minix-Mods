@@ -3,45 +3,55 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 
-int cmds[32];
+int *cmds;
 extern char** _args;
-extern char **getline(void);
-int pipe_count;
+extern char** getline(void);
+int pipe_count, error_found, cmd_count, 
+    redir_in, redir_out, clause_count, next_cmd;
 extern int operror;
-int error_found;
-int cmd_count;
+
 
 
 int main(int argc, char *argv[], char *envp[]) {
-  int i;
-  int fd[2];
-  cmd_count = 0;
-  for(;;) {
-    pipe_count = 0;
-    fd[1] = 0;
-    fd[2] = 0;
-    printf(" dShell$ ");
-    getline();
-    cmds[cmd_count+1] = -1;
-    if(operror)
-      continue;
-    for(i = 1; _args[i] != NULL; i++) {
-      printf("Argument %d: %s\n", i, _args[i]);
-    }
-    printf("Arg loop complete.\n");
-    fflush(stdout);
-    for(i = 0; cmds[i] != -1; i++) {
-      printf("cmds[%d]: %d\n", i, cmds[i]);
-    }
-    if(error_found)
-      continue;
-    /*for(i = 1;cmds[i] != -1; i+=2){
-      while(strcmp(_args[cmds[i]], ";")){
-         --i;
-         
+  int i, j, k = 0;
+  cmds = calloc(32, sizeof(int));
+  _args = calloc(256, sizeof(char*));
+    for(;;) {
+      cmd_count = redir_in = redir_out = 
+         error_found = clause_count = next_cmd = 0;
+      int oldPipe[2] = {0, 0};
+      int newPipe[2] = {0, 0};
+      printf(" dShell$ ");
+      getline();
+      pipe_count = 0;
+      if(operror)
+         continue;
+      for(i = 1; _args[i] != NULL; i++) {
+         printf("Argument %d: %s\n", i, _args[i]);
       }
-    }*/
+      printf("Arg loop complete.\n");
+      fflush(stdout);
+      for(i = 0; cmds[i] != -1; i++) {
+         printf("cmds[%d]: %d\n", i, cmds[i]);
+      }
+      if(error_found)
+         continue;
+      for(i = 1;cmds[i] != -1 || cmds[i] != -2; i+=2){
+         switch(cmds[i]{
+            case -10:
+               redir_in = 1;
+               break;
+            case -11:
+               redir_out = 1;
+               break;
+            case -12:
+               pipe_count++;
+         }
+         
+         }
+      }
   }
   return 0;
 }
