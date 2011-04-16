@@ -1,4 +1,5 @@
 %{
+/* Author: Will Crawford <wacrawfo@ucsc.edu> */
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -9,14 +10,14 @@ char **_args;
 extern int *cmds;
 int _argcount = 0;
 extern int cmd_count;
-extern int pipe_count;
+int pipe_count; /* NOT shared with dshell.c */
 int _wordop = 0;
 int operror = 0;
-int redir_in;
-int redir_out;
+int redir_in, redir_out;
 void add_arg(void);
 void new_word(void);
-
+void new_semicolon(void);
+void new_op(int);
 /* Notes for new_op:
 -1 EOL
 -2 ;
@@ -24,8 +25,6 @@ void new_word(void);
 -11 >
 -12 |
 */
-void new_op(int);
-void new_semicolon(void);
 %}
 %option noyywrap
 %option 8bit
@@ -38,7 +37,7 @@ BADOP [()]
 
 %%
   _argcount = _wordop = cmd_count = pipe_count = operror = 0; 
-  redir_in = redir_out = 0;
+  redir_in = redir_out = 0; _args[1] = NULL; cmds[0] = -1;
 exit                 {  if(!_wordop)
                            exit(1); /* Kludge. */
                         new_word();
@@ -89,7 +88,7 @@ exit                 {  if(!_wordop)
 \n                    {cmds[cmd_count + 1] = -1; return 1; }
 
 [ \t]+               {}
-
+<<EOF>>              {exit(0);}
 .                    {}
 
 %%
