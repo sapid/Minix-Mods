@@ -1,0 +1,20 @@
+Design notes taken from:
+The textbook
+http://linuxgazette.net/111/ramankutty.html
+
+# Purpose
+The purpose of this project is to design a simple shell for minix that performs most file descriptor redirection operations.
+
+# Available resources
+
+# Design
+Begin in a ready state. Upon receiving a newline character...
+Parse input with lex for syntactical soundness. (Reset shell if there are grammar errors.)
+   Lex (dlex.l) will create an array of indices called cmds whose entries point to the beginning of commands
+   It will also include negative numbers indicating various operator sigils or the end of the line.
+Parse again to figure out where phrases begin and end.
+Iterate through phrases, setting up pipes and executing various commands.
+Return to a ready state.
+
+# Testing
+Test string: ls | cat | cat | cat | cat | cat > output

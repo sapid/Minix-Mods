@@ -25,28 +25,28 @@ int piping(int pid, int* oldPipe, int* newPipe){
       /* In parent.*/
       if(debug)
          printf("oldPipe: %d, %d\tnewPipe: %d, %d\n", oldPipe[0], oldPipe[1], newPipe[0], newPipe[1]);
-      if(oldPipe[0]>=0) close(oldPipe[0]); /* Failure here means doing nothing, so we don't listen for a return. */
+      if(oldPipe[0]>-1) close(oldPipe[0]); /* Failure here means doing nothing, so we don't listen for a return. */
       oldPipe[0] = newPipe[0];
-      if(oldPipe[1]>=0) close(oldPipe[1]); 
+      if(oldPipe[1]>-1) close(oldPipe[1]); 
       oldPipe[1] = newPipe[1];
       if(debug) printf("%d Swap complete.\n", pid);
       }
    else{
       /* In child. */
       if(debug) printf("A child is swapping pipes.\n");
-      if(oldPipe[0]>=0){
+      if(oldPipe[0]>-1){
          if(debug) printf("Swapping input... %d\n", oldPipe[0]);
          close(newPipe[0]);/* Failure here means doing nothing, so we don't listen for a return. */
          close(0);
          if(dup(oldPipe[0]) < 0)
-            fprintf(stderr, "1 Duping a pipe failed in a child: %d\n", errno);
+            fprintf(stderr, "1 Duping a pipe (%d) failed in a child: %d\n", oldPipe[0], errno);
          close(oldPipe[0]);
       }
-      if(newPipe[1]>=0){
+      if(newPipe[1]>-1){
          if(debug) printf("Swapping output... duping %d\n", newPipe[1]);
          close(1);
          if(dup(newPipe[1]) < 0)
-            fprintf(stderr, "2 Duping a pipe failed in a child: %d\n", errno);
+            fprintf(stderr, "2 Duping a pipe (%d) failed in a child: %d\n", newPipe[1], errno);
          close(newPipe[1]);
       if(newPipe[0]>=0)
          close(newPipe[0]);
