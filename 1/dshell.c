@@ -13,7 +13,7 @@ extern char** getline(void);
 int pipe_count, redir_in, redir_out, pid, 
     cmd_count, cmd_current, cmd_start, cmd_end;
 extern int operror;
-int debug = 0;
+int debug = 1;
 int exec_failed;
 int return_status;
 
@@ -25,36 +25,35 @@ int piping(int pid, int* oldPipe, int* newPipe){
       /* In parent.*/
       if(debug)
          printf("oldPipe: %d, %d\tnewPipe: %d, %d\n", oldPipe[0], oldPipe[1], newPipe[0], newPipe[1]);
-      if(oldPipe[0]>2)
-         close(oldPipe[0]); /* Failure here means doing nothing, so we don't listen for a return. */
+      if(oldPipe[0]>=0) close(oldPipe[0]); /* Failure here means doing nothing, so we don't listen for a return. */
       oldPipe[0] = newPipe[0];
-      if(oldPipe[1]>2)
-         close(oldPipe[1]); /* Failure here means doing nothing, so we don't listen for a return. */
+      if(oldPipe[1]>=0) close(oldPipe[1]); 
       oldPipe[1] = newPipe[1];
       if(debug) printf("%d Swap complete.\n", pid);
       }
    else{
       /* In child. */
       if(debug) printf("A child is swapping pipes.\n");
-      if(oldPipe[0]){
-         if(debug) printf("Swapping input.\n");
+      if(oldPipe[0]>=0){
+         if(debug) printf("Swapping input... %d\n", oldPipe[0]);
          close(newPipe[0]);/* Failure here means doing nothing, so we don't listen for a return. */
-         close(0);/* Failure here means doing nothing, so we don't listen for a return. */
-         dup(oldPipe[0]);
-         close(oldPipe[0]);/* Failure here means doing nothing, so we don't listen for a return. */
+         close(0);
+         if(dup(oldPipe[0]) < 0)
+            fprintf(stderr, "1 Duping a pipe failed in a child: %d\n", errno);
+         close(oldPipe[0]);
       }
-      if(newPipe[1]){
-         if(debug) printf("Swapping output.\n");
+      if(newPipe[1]>=0){
+         if(debug) printf("Swapping output... duping %d\n", newPipe[1]);
          close(1);
-         dup(newPipe[1]);
+         if(dup(newPipe[1]) < 0)
+            fprintf(stderr, "2 Duping a pipe failed in a child: %d\n", errno);
          close(newPipe[1]);
-      if(newPipe[0])
+      if(newPipe[0]>=0)
          close(newPipe[0]);
-      if(oldPipe[1])
+      if(oldPipe[1]>=0)
          close(oldPipe[1]);
       }
    }
-
    return 0;
 }
 /* Fork and execute _args[cmds[z]] */
@@ -89,17 +88,17 @@ int fexec(int z, int* oldPipe, int* newPipe){
 
 
 int main(int argc, char *argv[], char *envp[]) {
+   int oldPipe[2];
+   int newPipe[2];
    int i = 0;
-   int oldPipe[2] = {0, 0};
-   int newPipe[2] = {0, 0};
    if(debug) printf("DEBUG ENABLED.\n");
    cmds = calloc(32, sizeof(int));
    _args = calloc(256, sizeof(char*));
    while(1){
-      oldPipe[0] = 0;
-	  oldPipe[1] = 0;
-      newPipe[0] = 0;
-	  newPipe[1] = 0;
+      oldPipe[0] = -1;
+	   oldPipe[1] = -1;
+      newPipe[0] = -1;
+	   newPipe[1] = -1;
       cmd_count = redir_in = redir_out = 
          i = cmd_current = cmd_start = cmd_end = 0;
       printf(" dShell$ ");
@@ -180,23 +179,27 @@ int main(int argc, char *argv[], char *envp[]) {
             if(redir_in){
                if(debug)
                   printf("Generating redir_in descriptor to %s.\n", _args[cmds[cmd_current+2]]);
+               if(oldPipe[0] > -1) close(oldPipe[0]);
                oldPipe[0] = open(_args[cmds[cmd_current+2]], O_RDONLY);
                if(oldPipe[0] < 0)
                   open_failed++;
                redir_in--;
-               cmd_push=1;
+               cmd_push+=2;
             }
             if(!redir_out && !pipe_count){
-               newPipe[1] = 0; newPipe[0] = 0;
+               if(newPipe[1] > -1) close(newPipe[1]);
+               if(newPipe[0] > -1) close(newPipe[0]);
+               newPipe[1] = -1; newPipe[0] = -1;
             }
             if(redir_out && !pipe_count){
                if(debug)
                   printf("Generating redir_out descriptor to %s.\n", _args[cmds[cmd_current+2]]);
+               if(newPipe[1] > -1) close(newPipe[1]);
                newPipe[1] = open(_args[cmds[cmd_current+2]], O_CREAT | O_WRONLY, 0755);
                if(newPipe[1] < 0)
                   open_failed++;
                redir_out--;
-               cmd_push =1;
+               cmd_push +=2;
             }
             if(pipe_count){
                if(debug) printf("Generating pipes.\n");
@@ -217,12 +220,16 @@ int main(int argc, char *argv[], char *envp[]) {
             if(debug) printf("fexecing %s.\n", _args[cmds[cmd_current]]);
             fexec(cmd_current, oldPipe, newPipe); 
             if(cmd_push)
-               cmd_current += 2;
+               cmd_current += cmd_push;
          }
       return_status = 0;
       if(exec_failed)
          fprintf(stderr, "Something went wrong. Waiting for open children...\n");
-      while(waitpid(-1, &return_status, 0) != -1){
+      if(newPipe[0]>=0) close(newPipe[0]);
+      if(newPipe[1]>=0) close(newPipe[1]);
+      if(oldPipe[0]>=0) close(oldPipe[0]);
+      if(oldPipe[1]>=0) close(oldPipe[1]);
+      while(printf("Waiting...\n") && waitpid(-1, &return_status, 0) != -1){
          if(debug) printf("A child returned with status %d\n", return_status);
          if(return_status)
             fprintf(stderr, "Parent: A child returned an exit code indicating failure.\n");
@@ -234,14 +241,6 @@ int main(int argc, char *argv[], char *envp[]) {
       else
          cmd_start = cmd_end;
       }
-   if(newPipe[0])
-      close(newPipe[0]);
-   if(newPipe[1])
-      close(newPipe[1]);
-   if(oldPipe[0])
-      close(oldPipe[0]);
-   if(oldPipe[1])
-      close(oldPipe[1]);
    }  
   return 0;
 }
