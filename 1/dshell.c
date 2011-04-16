@@ -13,7 +13,7 @@ extern char** getline(void);
 int pipe_count, redir_in, redir_out, pid, 
     cmd_count, cmd_current, cmd_start, cmd_end;
 extern int operror;
-int debug = 1;
+int debug = 0;
 int exec_failed;
 int return_status;
 
