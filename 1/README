@@ -1,0 +1,7 @@
+This is a shell for MINIX, but the system calls should be compatible with other operating systems so long as you have the right C libraries.
+
+This project expects that you have lex installed.
+
+To build it, just type make.
+
+One caveat: the last pipe seems to fail. I can't tell why. If you figure it out, please let me know.
