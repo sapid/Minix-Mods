@@ -129,7 +129,7 @@ void new_semicolon(void){
       _args[_argcount++] = NULL;
       cmds[cmd_count++] = -2;
       cmds[cmd_count] = -1;
-      redir_in = redir_out = 0;
+      redir_in = redir_out = pipe_count =  0;
       return;
    } else {
       fprintf(stderr, "Syntax error: did not expect semi-colon after operator.\n");
