@@ -5,7 +5,7 @@
 #	make again		spotless, then all
 
 shell: dshell.c dlex.c
-	gcc -g -Wall -o shell dshell.c dlex.c
+	cc -g -Wall -o shell dshell.c dlex.c
 
 dlex.c : dlex.l
 	lex -l -odlex.c dlex.l 2> dlex.out

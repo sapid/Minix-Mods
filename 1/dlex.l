@@ -88,7 +88,11 @@ exit                 {  if(!_wordop)
 \n                    {cmds[cmd_count + 1] = -1; return 1; }
 
 [ \t]+               {}
-<<EOF>>              {exit(0);}
+<<EOF>>              {
+                     if(cmds[0] = -1)
+                        exit(0);
+                     else
+                        operror=1;}
 .                    {}
 
 %%
