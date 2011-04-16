@@ -16,7 +16,7 @@ int operror = 0;
 int redir_in, redir_out;
 void add_arg(void);
 void new_word(void);
-void new_semicolon(void);
+int new_semicolon(void);
 void new_op(int);
 /* Notes for new_op:
 -1 EOL
@@ -77,8 +77,8 @@ exit                 {  if(!_wordop)
                         }
                      }
 [;]                  {
-                        new_semicolon();
-                        add_arg();
+                        if(new_semicolon())
+                           add_arg();
                      }
 {BADOP}              {  operror = 1; 
                         fprintf(stderr, "Syntax error: parentheses not supported.");
@@ -123,18 +123,23 @@ void new_word(void){
    }
 }
 
-void new_semicolon(void){
+int new_semicolon(void){
    if(_wordop){
-      _wordop = 1;
+      _wordop = 0;
       _args[_argcount++] = NULL;
       cmds[cmd_count++] = -2;
       cmds[cmd_count] = -1;
       redir_in = redir_out = pipe_count =  0;
-      return;
+      return 1;
    } else {
-      fprintf(stderr, "Syntax error: did not expect semi-colon after operator.\n");
-      operror = 1;
-      return;
+      if(cmd_count == 0 || cmds[cmd_count-1] == -2){
+         return 0;
+      }
+      else{
+         fprintf(stderr, "Syntax error: did not expect semi-colon after redirection operator.\n");
+         operror = 1;
+         return 1;
+      }
    }
 }
 
