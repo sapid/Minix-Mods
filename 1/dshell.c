@@ -14,6 +14,8 @@ int pipe_count, redir_in, redir_out, pid,
     cmd_count, cmd_current, cmd_start, cmd_end;
 extern int operror;
 int debug = 0;
+int exec_failed;
+int return_status;
 
 /*
  * Begin program.
@@ -94,8 +96,10 @@ int main(int argc, char *argv[], char *envp[]) {
    cmds = calloc(32, sizeof(int));
    _args = calloc(256, sizeof(char*));
    while(1){
-      oldPipe = {0, 0};
-      newPipe = {0, 0};
+      oldPipe[0] = 0;
+	  oldPipe[1] = 0;
+      newPipe[0] = 0;
+	  newPipe[1] = 0;
       cmd_count = redir_in = redir_out = 
          i = cmd_current = cmd_start = cmd_end = 0;
       printf(" dShell$ ");
