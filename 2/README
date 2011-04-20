@@ -1,0 +1,43 @@
+proc.c => /usr/src/kernel/proc.c
+   The relevant functions to look at here are sched() and pick_proc()
+      Also maybe enqueue() and dequeue()
+proc.h => /usr/src/kernel/proc.h
+   Modifying the proc structure here may be necessary.
+resource.c => /usr/include/sys/resource.h
+   PRIO_MIN and PRIO_MAX may need to be modified.
+misc.c => /usr/include/servers/pm/misc.c
+   do_getsetpriority() sets process priority.
+      This calls do_nice() in system.c
+   Alternatively, just call nice() which calls do_nice() directly.
+system.c => /usr/include/kernel/system.c
+   Contains do_nice(). Probably needs to be rewritten.
+longrun.c
+   This is simply a program that will loop forever without CPU optimization.
+
+The current MINIX scheduler is pretty simply. It maintains 16 queues of "ready" processes (0-15). 0 is highest priority; 15 is lowest and contains only IDLE. Processes have a max priority.
+
+Add 3 queues (0-18) and use the bottom 3 for user processes.
+   A system process has SYS_PROC bit set in the process's flag variable.
+
+
+Lottery Scheduling
+------------------
+System processes use the original algorithm; (0-15) remain untouched.
+Queue 16 holds all user processes - default for a new process is 5. Processes can add or subtract tickets by calling setpriority(ntickets) where ntickets < 101.
+The scheduler generates a random number 0 to the sum of ntickets - 1. It then iterates through the ready queue until it hits zero or less, and runs that process.
+srandom() will initialize the random number generator. random() may be used to fetch a random number.
+Processes are created and initialized in /usr/src/kernel/system/do_fork.c... this is probably the best place to initialize any data structures.
+
+
+Round-Robin Queues
+------------------
+Again, user processes will exist in queues 16-18.
+Demotion from Queue 1: Complete 5 quanta.
+Demotion from Queue 2: Complete 5 quanta.
+Promotion to  Queue 1: Complete 10 quanta.
+
+Running strategy:
+Run all processes in Queue 1, then a process from Queue 2. Once all processes in Queue 2 have run, run a process from Queue 3.
+
+Tip:
+Have a pseudo-process that runs a process from the next queue when it's in front. (Make sure it can't move!)
