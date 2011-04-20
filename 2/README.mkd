@@ -1,3 +1,5 @@
+Note: information on rebuilding the kernel is [here][http://wiki.minix3.org/en/DevelopersGuide/RebuildingSystem]
+
 Process Scheduling
 ==================
 
