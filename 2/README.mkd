@@ -1,18 +1,18 @@
-proc.c => /usr/src/kernel/proc.c
-   The relevant functions to look at here are sched() and pick_proc()
-      Also maybe enqueue() and dequeue()
-proc.h => /usr/src/kernel/proc.h
-   Modifying the proc structure here may be necessary.
-resource.c => /usr/include/sys/resource.h
-   PRIO_MIN and PRIO_MAX may need to be modified.
-misc.c => /usr/include/servers/pm/misc.c
-   do_getsetpriority() sets process priority.
-      This calls do_nice() in system.c
-   Alternatively, just call nice() which calls do_nice() directly.
-system.c => /usr/include/kernel/system.c
-   Contains do_nice(). Probably needs to be rewritten.
-longrun.c
-   This is simply a program that will loop forever without CPU optimization.
+`proc.c => /usr/src/kernel/proc.c`  
+   The relevant functions to look at here are sched() and pick_proc()  
+      Also maybe enqueue() and dequeue()  
+`proc.h => /usr/src/kernel/proc.h`  
+   Modifying the proc structure here may be necessary.  
+`resource.c => /usr/include/sys/resource.h`  
+   PRIO_MIN and PRIO_MAX may need to be modified.  
+`misc.c => /usr/include/servers/pm/misc.c`  
+   do_getsetpriority() sets process priority.  
+      This calls do_nice() in system.c  
+   Alternatively, just call nice() which calls do_nice() directly.  
+`system.c => /usr/include/kernel/system.c`  
+   Contains do_nice(). Probably needs to be rewritten.  
+`longrun.c`  
+   This is simply a program that will loop forever without CPU optimization.  
 
 The current MINIX scheduler is pretty simply. It maintains 16 queues of "ready" processes (0-15). 0 is highest priority; 15 is lowest and contains only IDLE. Processes have a max priority.
 
