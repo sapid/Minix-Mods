@@ -117,6 +117,7 @@ struct proc {
 #if DEBUG_TRACE
   int p_schedules;
 #endif
+int tickets, quanta; /* These are for custom user queues. */
 };
 
 #endif /* __ASSEMBLY__ */
