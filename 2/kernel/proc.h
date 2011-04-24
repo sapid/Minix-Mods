@@ -237,12 +237,12 @@ int tickets, quanta; /* These are for custom user queues. */
  * can be set in table.c. IDLE must have a queue for itself, to prevent low 
  * priority user processes to run round-robin with IDLE. 
  */
-#define NR_SCHED_QUEUES   16	/* MUST equal minimum priority + 1 */
+#define NR_SCHED_QUEUES   19	/* MUST equal minimum priority + 1 */
 #define TASK_Q		   0	/* highest, used for kernel tasks */
-#define MAX_USER_Q  	   0    /* highest priority for user processes */   
-#define USER_Q  	  (NR_SCHED_QUEUES / 2) /* default (should correspond to
+#define MAX_USER_Q  	   15    /* highest priority for user processes */   
+#define USER_Q  	  15 /* default (should correspond to
 						   nice 0) */
-#define MIN_USER_Q	  (NR_SCHED_QUEUES - 1)	/* minimum priority for user
+#define MIN_USER_Q	  15	/* minimum priority for user
 						   processes */
 
 /* Magic process table addresses. */
