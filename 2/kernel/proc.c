@@ -1377,7 +1377,7 @@ int *front;					/* return: front or back */
    */
   if (! time_left) {				/* quantum consumed ? */
       rp->p_ticks_left = rp->p_quantum_size; 	/* give new quantum */
-      if (rp->p_priority < (NR_SCHED_QUEUES-1)) {
+      if (rp->p_priority < (NR_SCHED_QUEUES-1) && rp->s_flags & SYS_PROC) {
           rp->p_priority += 1;			/* lower priority */
       }
   }
@@ -1389,7 +1389,50 @@ int *front;					/* return: front or back */
   *queue = rp->p_priority;
   *front = time_left;
 }
+/*===========================================================================*
+ *				lottery  				     * 
+ *===========================================================================*/
+/* Helper functions first */
+ 
+u_long randseed = 937186357; /* just in case lot_random() is called without 
+                                lot_srandom() */
 
+void lot_srandom(seed) u_long seed;
+{
+        int i;
+        randseed = seed;
+        for (i = 0; i < 10; i++) /* A hard-coded magic number for NSHUFF. */
+                (void)random();
+}
+
+u_long lot_random()
+{
+        register long x, hi, lo, t;
+        /*
+         * Compute x[n + 1] = (7^5 * x[n]) mod (2^31 - 1).
+         * From "Random number generators: good ones are hard to find",
+         * Park and Miller, Communications of the ACM, vol. 31, no. 10,
+         * October 1988, p. 1195.
+         */
+        /* Can't be initialized with 0, so use another value. */
+        if ((x = randseed) == 0)
+                x = 123459876;
+        hi = x / 127773;
+        lo = x % 127773;
+        t = 16807 * lo - 2836 * hi;
+        if (t < 0)
+                t += 0x7fffffff;
+        randseed = t;
+        return (t);
+}
+/* The lottery function */
+PRIVATE lottery(int ntickets)
+{
+   ntickets--;
+   lot_srandom(get_uptime());
+   return lot_random()%ntickets;
+
+}
 /*===========================================================================*
  *				pick_proc				     * 
  *===========================================================================*/
@@ -1418,6 +1461,21 @@ PRIVATE struct proc * pick_proc(void)
 		bill_ptr = rp;		/* bill for system time */
 	return rp;
   }
+  if(q = rdy_head[USER_Q]){
+      int ntickets = 0;
+      for (rp = rdy_head[USER_Q]; rp != NULL; rp++){
+         ntickets += rp->tickets;
+      }
+      int lucky_winner = lottery(ntickets);
+      for (rp = rdy_head[USER_Q]; rp != NULL; rp++){
+         if((lucky_winner - rp->tickets) <= 0){
+            if(priv(rp)->s_flags & BILLABLE)
+               bill_ptr = rp;
+            return rp;
+         }
+      }
+  }
+   
   return NULL;
 }
 
