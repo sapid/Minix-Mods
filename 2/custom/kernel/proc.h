@@ -238,12 +238,17 @@ int tickets, quanta; /* These are for custom user queues. */
  * priority user processes to run round-robin with IDLE. 
  */
 #define NR_SCHED_QUEUES   19	/* MUST equal minimum priority + 1 */
+#define NR_TASK_QUEUES    16  /* CUSTOM - number of system queues*/
 #define TASK_Q		   0	/* highest, used for kernel tasks */
-#define MAX_USER_Q  	   15    /* highest priority for user processes */   
-#define USER_Q  	  15 /* default (should correspond to
+#define MAX_USER_Q  	   0    /* highest priority for user processes */   
+#define USER_Q  	  (NR_TASK_QUEUES / 2) /* default (should correspond to
 						   nice 0) */
-#define MIN_USER_Q	  15	/* minimum priority for user
+#define MIN_USER_Q	  (NR_TASK_QUEUES - 1)	/* minimum priority for user
 						   processes */
+/* The following queues are used for both lottery and custom round-robin. */
+#define NR_RRQ1      17
+#define NR_RRQ2      18
+#define NR_RRQ3      19
 
 /* Magic process table addresses. */
 #define BEG_PROC_ADDR (&proc[0])
