@@ -1,16 +1,18 @@
 /* Author: Will Crawford <wacrawfo@ucsc.edu> */
 #include <stdio.h>
-#include <sys/types.h>
+#include <sys/types.h> /* For wait() */
+#include <sys/wait.h>  /* For wait() */
 #include <unistd.h>
 #include <stdlib.h>
-int *return_status;
 int errno;
 void execute(void){
    int pid = fork();
    if(pid){
       /* In parent */
-      pid = waitpid(pid,return_status, 0);
-      if(&return_status != 0)
+      int return_status = 1;
+      pid = waitpid(pid,&return_status, 0);
+      printf("return status: %d\n", return_status);
+      if(return_status = 0)
          fprintf(stderr, "Parent: Execution of child failed.\n");
       printf("Process died.\n");
    } else {

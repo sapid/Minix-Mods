@@ -1,4 +1,4 @@
-all: forktest pipetest infromfile outtofile
+all: forktest pipetest infromfile outtofile exectest multipipetest nohuptest
 
 
 forktest:
@@ -25,6 +25,10 @@ outtofile:
 multipipetest:
 	gcc multipipetest.c -o multi_pipe_test
 	./multi_pipe_test
+	
+nohuptest:
+	gcc nohuptest.c -o no_hup_test
+	./no_hup_test
 
 clean:
 	rm *_*

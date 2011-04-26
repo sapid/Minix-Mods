@@ -4,8 +4,7 @@
 #include <unistd.h>
 int *return_status;
 int pid;
-void pipe_child(int *oldPipe, int *newPipe){
-   pipe(newPipe);
+void redirect(int *oldPipe, int *newPipe){
    pid = fork();
    if(pid){
       /* In parent. Shuffle the pipes for the next child. */
@@ -13,17 +12,19 @@ void pipe_child(int *oldPipe, int *newPipe){
       oldPipe[0] = newPipe[0]; 
       close(oldPipe[1]);
       oldPipe[1] = newPipe[1];
+      printf("%d Swap complete.\n", pid);
       return;
    }
    else {
       /* In child. */
-      if(oldPipe[0]){
+      if(oldPipe[0] != 0){
+         printf("%d Piping.\n", pid);
          close(newPipe[0]);
          close(0);
          dup(oldPipe[0]);
          close(oldPipe[0]);
       }
-      if(newPipe[0]){
+      if(newPipe[0] != 0){
          close(1);
          dup(newPipe[1]);
          close(newPipe[1]);
@@ -41,13 +42,14 @@ int main(int argc, char *argv[], char *envp[]) {
    pid = 1;
    int i;
    for(i = 0; i < 4; i++){
-      if(pid)
+      if(pid){
          pipe(newPipe);
-         pipe_child(oldPipe, newPipe);
+         redirect(oldPipe, newPipe);
+      }
    }
    newPipe[0] = 0;
    newPipe[1] = 0;
-   pipe_child(oldPipe, newPipe); /* This child should print to stdout. */
+   redirect(oldPipe, newPipe); /* This child should print to stdout. */
    if(pid){
       printf("Multi-pipe test successful.\n");
       while(waitpid(-1,return_status) != -1){}; /* Wait until all processes finish. */
