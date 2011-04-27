@@ -246,9 +246,9 @@ int tickets, quanta; /* These are for custom user queues. */
 #define MIN_USER_Q	  (NR_TASK_QUEUES - 1)	/* minimum priority for user
 						   processes */
 /* The following queues are used for both lottery and custom round-robin. */
-#define NR_RRQ1      17
-#define NR_RRQ2      18
-#define NR_RRQ3      19
+#define RRQ1      17
+#define RRQ2      18
+#define RRQ3      19
 
 /* Magic process table addresses. */
 #define BEG_PROC_ADDR (&proc[0])
