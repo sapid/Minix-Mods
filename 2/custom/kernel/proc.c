@@ -45,6 +45,9 @@
 #include "proc.h"
 #include "vm.h"
 
+#define SCHED_RRQ 0;
+#define SCHED_LOT 0;
+
 /* Scheduling and message passing functions. The functions are available to 
  * other parts of the kernel through lock_...(). The lock temporarily disables 
  * interrupts to prevent race conditions. 
