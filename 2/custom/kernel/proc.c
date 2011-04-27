@@ -45,8 +45,11 @@
 #include "proc.h"
 #include "vm.h"
 
-#define SCHED_RRQ 0;
-#define SCHED_LOT 0;
+#define SCHED_RRQ 0
+#define SCHED_LOT 1
+#ifdef SCHED_RRQ
+static struct proc _rrq_sentinel[3];
+#endif
 
 /* Scheduling and message passing functions. The functions are available to 
  * other parts of the kernel through lock_...(). The lock temporarily disables 
@@ -1418,6 +1421,7 @@ int *front;					/* return: front or back */
            break;
         default: break; } 
   }
+  # SENTINEL CHECK CODE GOES HERE.
   #endif 
   
   /* If there is time left, the process is added to the front of its queue, 
@@ -1427,6 +1431,7 @@ int *front;					/* return: front or back */
   *queue = rp->p_priority;
   *front = time_left;
 }
+#ifdef SCHED_LOT
 /*===========================================================================*
  *				lottery  				     * 
  *===========================================================================*/
@@ -1471,6 +1476,7 @@ PRIVATE lottery(int ntickets)
    return lot_random()%ntickets;
 
 }
+#endif
 /*===========================================================================*
  *				pick_proc				     * 
  *===========================================================================*/
@@ -1499,6 +1505,7 @@ PRIVATE struct proc * pick_proc(void)
 		bill_ptr = rp;		/* bill for system time */
 	return rp;
   }
+  #ifdef SCHED_LOT
   /* System queues exhausted. Begin lottery... */
   if(q = rdy_head[RRQ1]){
       int ntickets = 0;
@@ -1514,6 +1521,7 @@ PRIVATE struct proc * pick_proc(void)
          }
       }
   }
+  #endif
    
   return NULL;
 }
@@ -1539,11 +1547,12 @@ timer_t *tp;					/* watchdog timer pointer */
   lock;
   for (rp=BEG_PROC_ADDR; rp<END_PROC_ADDR; rp++) {
       if (! isemptyp(rp)) {				/* check slot use */
-	  if (rp->p_priority > rp->p_max_priority /* update priority? */
-         && rp->p_priority <= MIN_USER_Q) { /* Only balance system queues. */	
+	  if (rp->p_priority > rp->p_max_priority) {/* update priority? */
 	      if (proc_is_runnable(rp)) dequeue(rp);	/* take off queue */
 	      ticks_added += rp->p_quantum_size;	/* do accounting */
-	      rp->p_priority -= 1;			/* raise priority */
+         /* Custom: I'm assuming either SCHED_LOT or SCHED_RRQ is set. */
+         if(priv(rp)->s_flags & SYS_PROC) 
+	         rp->p_priority -= 1;			/* raise priority */
 	      if (proc_is_runnable(rp)) enqueue(rp);	/* put on queue */
 	  }
 	  else {
