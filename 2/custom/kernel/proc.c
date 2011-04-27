@@ -45,8 +45,6 @@
 #include "proc.h"
 #include "vm.h"
 
-#define SCHED_RRQ 0
-#define SCHED_LOT 1
 #ifdef SCHED_LOT
 static unsigned long randseed = 937186357; /* just in case lot_random() is called without lot_srandom() */
 static int randseeded = 0;

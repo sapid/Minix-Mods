@@ -15,7 +15,7 @@
 #include <minix/portio.h>
 #include "const.h"
 #include "priv.h"
-#define SCHED_LOT 0
+#define SCHED_LOT 1
 #define SCHED_RRQ 0
 
 struct proc {
