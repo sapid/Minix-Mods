@@ -98,6 +98,7 @@ register message *m_ptr;	/* pointer to request message */
   /* CUSTOM begin */
   rpc->tickets = 5; /* Initialize tickets for lottery scheduling. */
   rpc->quanta = 5; /* Initialize quanta for round-robin scheduling. */
+  rpc->p_priority = RRQ1;
   /* CUSTOM end */
 
   /* Calculate endpoint identifier, so caller knows what it is. */
