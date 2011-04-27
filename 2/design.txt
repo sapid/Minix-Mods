@@ -25,11 +25,53 @@ First, proc.h must be modified. The proc struct must have two additional attribu
 
 Due to the way system processes are spawned, I will also be creating new queue definitions in proc.h. Because the system uses USER_Q for a variety of operations, and I want to separate system processes from user processes in the queues, separate definitions will be used for the custom queues.
 
-In the case of the lottery algorithm, sched must be modified to keep user processes in a single queue. In the case of the round-robin algorithm, sched will have to check the quanta attribute to manage promotion and demotion amongst three user queues.
+## Lottery
+### sched():
+Do not move user processes.
 
-Pick-proc must be modified according to cases as well. In the case of lottery, pick_proc must generate a random number (modulo the number of tickets in the ready queue) and iterate through the user queue, subtracting from that number, until it reaches a non-positive value. It will then choose that process.
+### pick_proc():
+ntickets = Count up the tickets in the queue.
+lucky_winner = random()%ntickets;
+for(lucky_winner; (lucky_winner - rp->tickets) <= 0; rp = rp->next)
+   {}
+return rp;
 
-In the case of round-robin, pick_proc will deterministically choose a process. It will run all the processes in a given queue before choosing a process in the next queue. (This applies recursively.)
+
+## Round-robin:
+### sched():
+If the the process's queue has only the sentinel, enqueue to head.
+Else, enqueue to tail.
+If !time_left,
+   ++quanta
+   Evaluate for promotion/demotion
+else,
+   refresh quanta
+
+### dequeue():
+If the process is the head, and p->nextready is sentinel,
+   dequeue the process, then requeue the sentinel.
+
+### pick_proc():
+start = 1
+case:
+last == 0: break;
+last == 1:
+   If head is sentinel, requeue & start = 2
+last == 2:
+   If head is sentinel, requeue & start = 3
+last == 3:
+   If head is sentinel, requeue.
+default:
+   Kernel panic.
+for (int q = start; i <= 3; i++)
+   if (head != sentinel)
+      last = q;
+      return head[q];
+if last == 0
+   return NIL_PROC;
+else
+   last = 0
+   pick_proc()
 
 do_fork must be modified to initialize the values we chose to append to the proc struct.
 
