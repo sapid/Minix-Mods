@@ -47,6 +47,10 @@
 
 #define SCHED_RRQ 0
 #define SCHED_LOT 1
+#ifdef SCHED_LOT
+static unsigned long randseed = 937186357; /* just in case lot_random() is called without lot_srandom() */
+static int randseeded = 0;
+#endif
 #ifdef SCHED_RRQ
 static struct proc _rrq_sentinel[3];
 #endif
@@ -1388,17 +1392,17 @@ int *front;					/* return: front or back */
       }
       #ifdef SCHED_RRQ
       if (rp->p_priority >= RRQ1){
-         if(--quanta==0){
-            case(rp->p_priority){
-               RRQ1:
+         if(--(rp->quanta)==0){
+            switch(rp->p_priority){
+               case RRQ1:
                   rp->p_priority = RRQ2;
                   rp->quanta = 10;
                   break;
-               RRQ2:
+               case RRQ2:
                   rp->p_priority = RRQ3;
                   rp->quanta = 20;
                   break;
-               RRQ3:
+               case RRQ3:
                   rp->p_priority = RRQ1;
                   rp->quanta = 5;
                   break;
@@ -1409,19 +1413,19 @@ int *front;					/* return: front or back */
   } 
   #ifdef SCHED_RRQ
   else {
-     case(rp->p_priority){
-        RRQ1:
+     switch (rp->p_priority){
+        case RRQ1:
            rp->quanta = 5;
            break;
-        RRQ2:
+        case RRQ2:
            rp->quanta = 10;
            break;
-        RRQ3:
+        case RRQ3:
            rp->quanta = 20;
            break;
         default: break; } 
   }
-  # SENTINEL CHECK CODE GOES HERE.
+  /* SENTINEL CHECK CODE GOES HERE. */
   #endif 
   
   /* If there is time left, the process is added to the front of its queue, 
@@ -1437,19 +1441,19 @@ int *front;					/* return: front or back */
  *===========================================================================*/
 /* Helper functions first */
  
-u_long randseed = 937186357; /* just in case lot_random() is called without 
-                                lot_srandom() */
 
-void lot_srandom(seed) u_long seed;
-{
+void lot_srandom(void){
+        kprintf("Generating a seed.");
         int i;
-        randseed = seed;
+        randseed = get_uptime();
         for (i = 0; i < 10; i++) /* A hard-coded magic number for NSHUFF. */
-                (void)random();
+                lot_random();
+        randseeded = 1;
+        kprintf("Seeded.");
+        fflush(stdout);
 }
 
-u_long lot_random()
-{
+unsigned long lot_random(void){
         register long x, hi, lo, t;
         /*
          * Compute x[n + 1] = (7^5 * x[n]) mod (2^31 - 1).
@@ -1469,11 +1473,10 @@ u_long lot_random()
         return (t);
 }
 /* The lottery function */
-PRIVATE lottery(int ntickets)
-{
-   ntickets--;
-   lot_srandom(get_uptime());
-   return lot_random()%ntickets;
+int lottery(int ntickets){
+   if(!randseeded)
+      lot_srandom();
+   return (int) lot_random()%(--ntickets);
 
 }
 #endif
@@ -1507,12 +1510,13 @@ PRIVATE struct proc * pick_proc(void)
   }
   #ifdef SCHED_LOT
   /* System queues exhausted. Begin lottery... */
-  if(q = rdy_head[RRQ1]){
+  if(rdy_head[RRQ1]){
+      kprintf("Scheduling a user process.");
       int ntickets = 0;
-      for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp = rp->p_nextready){
+      int lucky_winner;
+      for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp = rp->p_nextready)
          ntickets += rp->tickets;
-      }
-      int lucky_winner = lottery(ntickets);
+      lucky_winner = lottery(ntickets);
       for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp->p_nextready){
          if((lucky_winner - rp->tickets) <= 0){
             if(priv(rp)->s_flags & BILLABLE)
