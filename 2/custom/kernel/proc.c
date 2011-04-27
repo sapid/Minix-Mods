@@ -1377,11 +1377,46 @@ int *front;					/* return: front or back */
    */
   if (! time_left) {				/* quantum consumed ? */
       rp->p_ticks_left = rp->p_quantum_size; 	/* give new quantum */
-      if (rp->p_priority < (NR_SCHED_QUEUES-1) && rp->s_flags & SYS_PROC) {
+      if (rp->p_priority < (NR_TASK_QUEUES-1)) {
           rp->p_priority += 1;			/* lower priority */
       }
+      #ifdef SCHED_RRQ
+      if (rp->p_priority >= RRQ1){
+         if(--quanta==0){
+            case(rp->p_priority){
+               RRQ1:
+                  rp->p_priority = RRQ2;
+                  rp->quanta = 10;
+                  break;
+               RRQ2:
+                  rp->p_priority = RRQ3;
+                  rp->quanta = 20;
+                  break;
+               RRQ3:
+                  rp->p_priority = RRQ1;
+                  rp->quanta = 5;
+                  break;
+               default: break; }
+         }
+      }
+      #endif
+  } 
+  #ifdef SCHED_RRQ
+  else {
+     case(rp->p_priority){
+        RRQ1:
+           rp->quanta = 5;
+           break;
+        RRQ2:
+           rp->quanta = 10;
+           break;
+        RRQ3:
+           rp->quanta = 20;
+           break;
+        default: break; } 
   }
-
+  #endif 
+  
   /* If there is time left, the process is added to the front of its queue, 
    * so that it can immediately run. The queue to use simply is always the
    * process' current priority. 
@@ -1449,7 +1484,7 @@ PRIVATE struct proc * pick_proc(void)
    * queues is defined in proc.h, and priorities are set in the task table.
    * The lowest queue contains IDLE, which is always ready.
    */
-  for (q=0; q < NR_SCHED_QUEUES; q++) {	
+  for (q=0; q < NR_TASK_QUEUES; q++) {	
 	if(!(rp = rdy_head[q])) {
 		TRACE(VF_PICKPROC, printf("queue %d empty\n", q););
 		continue;
@@ -1461,13 +1496,14 @@ PRIVATE struct proc * pick_proc(void)
 		bill_ptr = rp;		/* bill for system time */
 	return rp;
   }
-  if(q = rdy_head[USER_Q]){
+  /* System queues exhausted. Begin lottery... */
+  if(q = rdy_head[RRQ1]){
       int ntickets = 0;
-      for (rp = rdy_head[USER_Q]; rp != NULL; rp++){
+      for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp = rp->p_nextready){
          ntickets += rp->tickets;
       }
       int lucky_winner = lottery(ntickets);
-      for (rp = rdy_head[USER_Q]; rp != NULL; rp++){
+      for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp->p_nextready){
          if((lucky_winner - rp->tickets) <= 0){
             if(priv(rp)->s_flags & BILLABLE)
                bill_ptr = rp;
@@ -1500,7 +1536,8 @@ timer_t *tp;					/* watchdog timer pointer */
   lock;
   for (rp=BEG_PROC_ADDR; rp<END_PROC_ADDR; rp++) {
       if (! isemptyp(rp)) {				/* check slot use */
-	  if (rp->p_priority > rp->p_max_priority) {	/* update priority? */
+	  if (rp->p_priority > rp->p_max_priority /* update priority? */
+         && rp->p_priority <= MIN_USER_Q) { /* Only balance system queues. */	
 	      if (proc_is_runnable(rp)) dequeue(rp);	/* take off queue */
 	      ticks_added += rp->p_quantum_size;	/* do accounting */
 	      rp->p_priority -= 1;			/* raise priority */
