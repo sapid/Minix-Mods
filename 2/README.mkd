@@ -4,6 +4,8 @@ Specifically, the kernel can be rebuilt by putting the relevant files in the rig
 
 This code is intended for Minix 3.1.6.
 
+Note: Though the logic seems to be correct, my implementation doesn't seem to work.
+
 Process Scheduling
 ==================
 
@@ -38,6 +40,29 @@ Processes are created and initialized in /usr/src/kernel/system/do_fork.c... thi
 An algorithm for nicing:   
 5 - (x/5)   
 (-95/20)x + 5   
+
+proc.h:
+=======
+
+Here, we need to define an extra user queue, and trick the original process scheduler into keeping system processes out of the user queue. Because there's no harm in having them there, I defined three extra user queues so we can use the same proc.c for the other scheduling algorithm.
+
+This lets us speed up compile times by only recompiling the kernel instead of the whole world.
+
+Also, struct proc gets two new attributes... one for each algorithm. These must go on the end so we don't screw up some of the offsets assumed by assembly code.
+
+proc.c: sched
+=============
+
+Simply do not move user processes out of our custom user queue.
+
+proc.c: pick_proc
+=================
+
+ntickets = Count up the tickets in the queue.
+lucky_winner = random()%ntickets;
+for(lucky_winner; (lucky_winner - rp->tickets) <= 0; rp = rp->next)
+   {}
+return rp;
 
 
 Round-Robin Queues
