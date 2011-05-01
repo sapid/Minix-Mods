@@ -99,6 +99,7 @@ register message *m_ptr;	/* pointer to request message */
   rpc->tickets = 5; /* Initialize tickets for lottery scheduling. */
   rpc->quanta = 5; /* Initialize quanta for round-robin scheduling. */
   rpc->p_priority = RRQ1;
+  printf("kernel: initialized a process.\n");
   /* CUSTOM end */
 
   /* Calculate endpoint identifier, so caller knows what it is. */

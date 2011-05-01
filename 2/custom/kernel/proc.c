@@ -44,13 +44,16 @@
 #include "kernel.h"
 #include "proc.h"
 #include "vm.h"
+#define SCHED_LOT 1
+#define SCHED_RRQ 0
 
-#ifdef SCHED_LOT
+#if SCHED_LOT
 static unsigned long randseed = 937186357; /* just in case lot_random() is called without lot_srandom() */
 static int randseeded = 0;
+static int _reported_neglect = 0;
 #endif
-#ifdef SCHED_RRQ
-static struct proc _rrq_sentinel[3];
+#if SCHED_RRQ
+static struct proc rrq_sentinel[3];
 #endif
 
 /* Scheduling and message passing functions. The functions are available to 
@@ -1388,8 +1391,10 @@ int *front;					/* return: front or back */
       if (rp->p_priority < (NR_TASK_QUEUES-1)) {
           rp->p_priority += 1;			/* lower priority */
       }
-      #ifdef SCHED_RRQ
+      #if SCHED_RRQ
       if (rp->p_priority >= RRQ1){
+         time_left = 0;
+         kprintf("RRQ: %s\n", rp->p_name);
          if(--(rp->quanta)==0){
             switch(rp->p_priority){
                case RRQ1:
@@ -1409,7 +1414,7 @@ int *front;					/* return: front or back */
       }
       #endif
   } 
-  #ifdef SCHED_RRQ
+  #if SCHED_RRQ
   else {
      switch (rp->p_priority){
         case RRQ1:
@@ -1423,7 +1428,6 @@ int *front;					/* return: front or back */
            break;
         default: break; } 
   }
-  /* SENTINEL CHECK CODE GOES HERE. */
   #endif 
   
   /* If there is time left, the process is added to the front of its queue, 
@@ -1433,24 +1437,12 @@ int *front;					/* return: front or back */
   *queue = rp->p_priority;
   *front = time_left;
 }
-#ifdef SCHED_LOT
+#if SCHED_LOT
 /*===========================================================================*
  *				lottery  				     * 
  *===========================================================================*/
 /* Helper functions first */
  
-
-void lot_srandom(void){
-        kprintf("Generating a seed.");
-        int i;
-        randseed = get_uptime();
-        for (i = 0; i < 10; i++) /* A hard-coded magic number for NSHUFF. */
-                lot_random();
-        randseeded = 1;
-        kprintf("Seeded.");
-        fflush(stdout);
-}
-
 unsigned long lot_random(void){
         register long x, hi, lo, t;
         /*
@@ -1470,12 +1462,49 @@ unsigned long lot_random(void){
         randseed = t;
         return (t);
 }
+void lot_srandom(void){
+        int i;
+        randseed = get_uptime();
+        for (i = 0; i < 10; i++) /* A hard-coded magic number for NSHUFF. */
+                lot_random();
+        randseeded = 1;
+}
+
+
 /* The lottery function */
 int lottery(int ntickets){
    if(!randseeded)
       lot_srandom();
    return (int) lot_random()%(--ntickets);
 
+}
+#endif
+#if SCHED_RRQ
+/*===========================================================================*
+ *				_rrq_requeue			     * 
+ *===========================================================================*/
+PRIVATE void _rrq_requeue(int q){
+   int r;
+   kprintf("_rrq_requeue[%d]...", q);
+   switch(q){
+      case RRQ1:
+         r = 1; break;
+      case RRQ2:
+         r = 2; break;
+      case RRQ3:
+         r = 3; break;
+      default:
+         kprintf("_rrq_requeue: Prep for panic!\n");
+         fflush(stdout);
+         break;
+   }
+   if(rdy_head[q]->p_nextready != NULL){
+      rdy_tail[q]->p_nextready == _rrq_sentinel[r];
+      rdy_tail[q] = _rrq_sentinel[r];
+      rdy_head[q] = _rrq_sentinel[r]->p_nextready;
+      _rrq_sentinel[r]->p_nextready = NULL;
+   }
+   kprintf(" done.\n");
 }
 #endif
 /*===========================================================================*
@@ -1489,7 +1518,9 @@ PRIVATE struct proc * pick_proc(void)
  */
   register struct proc *rp;			/* process to run */
   int q;				/* iterate over queues */
-
+  #if SCHED_RRQ
+  int start = RRQ1;
+  #endif
   /* Check each of the scheduling queues for ready processes. The number of
    * queues is defined in proc.h, and priorities are set in the task table.
    * The lowest queue contains IDLE, which is always ready.
@@ -1506,25 +1537,76 @@ PRIVATE struct proc * pick_proc(void)
 		bill_ptr = rp;		/* bill for system time */
 	return rp;
   }
-  #ifdef SCHED_LOT
+  if(!_reported_neglect){
+    kprintf("Not choosing a system process.\n");
+    for(q = RRQ1; q<=RRQ3 ; q++){
+      kprintf("Queue %d:", q);
+      for(rp = rdy_head[q]; rp != NIL_PROC; rp = rp->p_nextready){
+         kprintf(" %s", rp->p_name);
+      }
+      kprintf("\n");
+    }
+
+  }
+ 
+  #if SCHED_LOT
   /* System queues exhausted. Begin lottery... */
   if(rdy_head[RRQ1]){
-      kprintf("Scheduling a user process.");
       int ntickets = 0;
       int lucky_winner;
-      for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp = rp->p_nextready)
+      _reported_neglect = 0;
+      kprintf("System queue exhausted. Holding a lottery.\n");
+      kprintf("Queue:");
+      for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp = rp->p_nextready){
+         kprintf(" %s", rp->p_name);
+         if(rp->tickets == 0)
+            rp->tickets = 5;
          ntickets += rp->tickets;
+      }
       lucky_winner = lottery(ntickets);
+      kprintf("\nntickets: %d winner: %d\n", ntickets, lucky_winner);
       for (rp = rdy_head[RRQ1]; rp != NIL_PROC; rp->p_nextready){
          if((lucky_winner - rp->tickets) <= 0){
             if(priv(rp)->s_flags & BILLABLE)
                bill_ptr = rp;
+            kprintf("Selected %s\n", rp->p_name);
             return rp;
          }
       }
   }
+  else{if(!_reported_neglect){
+   _reported_neglect = 1;
+   kprintf("Didn't choose a user process.\n");
+  }}
   #endif
-   
+  #if SCHED_RRQ
+  for(q = start; i <= RRQ3; i++){
+      kprintf("Finding low sentinel.\n", RRQ_last, q);
+      if(rdy_head[i] == rrq_sentinel[i-16]){
+         rrq_requeue(i);
+         start = ++i;
+         break;
+      }
+  }
+  for(i=start; i<=RRQ3; i++){
+      if(rdy_head[i] == rrq_sentinel[i-16]){
+         rrq_requeue(i);
+      else{
+         rp = rdy_head[i];
+         if(priv(rp)->s_flags & BILLABLE)
+            bill_ptr = rp;
+         return rp;
+      }
+  if(repeat == 1){
+      repeat = 0;
+      return NULL;
+  }
+  else{
+      repeat = 1;
+      return pick_proc();
+  }
+  #endif
+
   return NULL;
 }
 
@@ -1549,13 +1631,13 @@ timer_t *tp;					/* watchdog timer pointer */
   lock;
   for (rp=BEG_PROC_ADDR; rp<END_PROC_ADDR; rp++) {
       if (! isemptyp(rp)) {				/* check slot use */
-	  if (rp->p_priority > rp->p_max_priority) {/* update priority? */
-	      if (proc_is_runnable(rp)) dequeue(rp);	/* take off queue */
+	  if (rp->p_priority > rp->p_max_priority ) {/* update priority? */
+	      if (proc_is_runnable(rp) && priv(rp)->s_flags & SYS_PROC) dequeue(rp);	/* take off queue */
 	      ticks_added += rp->p_quantum_size;	/* do accounting */
          /* Custom: I'm assuming either SCHED_LOT or SCHED_RRQ is set. */
-         if(priv(rp)->s_flags & SYS_PROC) 
-	         rp->p_priority -= 1;			/* raise priority */
-	      if (proc_is_runnable(rp)) enqueue(rp);	/* put on queue */
+         if(priv(rp)->s_flags & SYS_PROC)
+	      rp->p_priority -= 1;			/* raise priority */
+	      if (proc_is_runnable(rp) && priv(rp)->s_flags & SYS_PROC) enqueue(rp);	/* put on queue */
 	  }
 	  else {
 	      ticks_added += rp->p_quantum_size - rp->p_ticks_left;

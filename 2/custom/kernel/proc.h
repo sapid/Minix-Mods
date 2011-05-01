@@ -15,8 +15,6 @@
 #include <minix/portio.h>
 #include "const.h"
 #include "priv.h"
-#define SCHED_LOT 1
-#define SCHED_RRQ 0
 
 struct proc {
   struct stackframe_s p_reg;	/* process' registers saved in stack frame */
@@ -255,11 +253,7 @@ int tickets, quanta; /* These are for custom user queues. */
 /* Magic process table addresses. */
 #define BEG_PROC_ADDR (&proc[0])
 #define BEG_USER_ADDR (&proc[NR_TASKS])
-#ifdef SCHED_RRQ
-   #define END_PROC_ADDR (&proc[NR_TASKS + NR_PROCS + 3])
-#else
-   #define END_PROC_ADDR (&proc[NR_TASKS + NR_PROCS])
-#endif
+#define END_PROC_ADDR (&proc[NR_TASKS + NR_PROCS])
 
 #define NIL_PROC          ((struct proc *) 0)		
 #define NIL_SYS_PROC      ((struct proc *) 1)		
