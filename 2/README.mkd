@@ -1,5 +1,9 @@
 Note: information on rebuilding the kernel is [here][http://wiki.minix3.org/en/DevelopersGuide/RebuildingSystem]
 
+Specifically, the kernel can be rebuilt by putting the relevant files in the right spot
+
+This code is intended for Minix 3.1.6.
+
 Process Scheduling
 ==================
 
@@ -8,31 +12,32 @@ Process Scheduling
       ** Also maybe enqueue() and dequeue()  
 `proc.h => /usr/src/kernel/proc.h`  
    * Modifying the proc structure here may be necessary.    
-`system.c => /usr/include/kernel/system.c`  
-   * Contains do_nice(). Probably needs to be rewritten.  
-`misc.c => /usr/include/servers/pm/misc.c`  
-   * do_getsetpriority() sets process priority.  
-      **  This calls do_nice() in system.c  
-   * Alternatively, just call nice() which calls do_nice() directly.
-`resource.c => /usr/include/sys/resource.h`  
-   * PRIO_MIN and PRIO_MAX may need to be modified. 
+`do_nice.c => /usr/src/kernel/system/do_nice.c`   
+   * Use conversion logic to adjust tickets a process gets based on nice level.
+   * Disable nice for round robin queueing entirely.
+`do_fork.c => /usr/src/kernel/system/do_fork.c`   
+   * Do_fork needs to set the initial priority for user processes and also intialize proc->tickets dna proc->quanta.
 `longrun.c`  
    * This is simply a program that will loop forever without CPU optimization.  
 
 The current MINIX scheduler is pretty simply. It maintains 16 queues of "ready" processes (0-15). 0 is highest priority; 15 is lowest and contains only IDLE. Processes have a max priority.
 
-Add 3 queues (0-18) and use the bottom 3 for user processes.
-   A system process has SYS_PROC bit set in the process's flag variable.
+Add 3 queues (0-18) and use the bottom 3 for user processes.   
+   * A system process has SYS_PROC bit set in the process's flag variable.
+   * Note: Init is not considered a system process and thus does not has SYS_PROC set.
 
 
 Lottery Scheduling
 ------------------
-System processes use the original algorithm; (0-15) remain untouched.  
+System processes use the original algorithm; queues (0-15) should remain untouched.  
 Queue 16 holds all user processes - default for a new process is 5. Processes can add or subtract tickets by calling nice, which should do setpriority(ntickets) where ntickets < 101.  
 * Default nice level is 10, which should be equal to 5 tickets.   
 The scheduler generates a random number 0 to the sum of ntickets - 1. It then iterates through the ready queue until it hits zero or less, and runs that process.  
-srandom() will initialize the random number generator. random() may be used to fetch a random number.  
-Processes are created and initialized in /usr/src/kernel/system/do_fork.c... this is probably the best place to initialize any data structures.  
+srandom() will initialize the random number generator. random() may be used to fetch a random number.   
+Processes are created and initialized in /usr/src/kernel/system/do_fork.c... this is probably the best place to initialize any data structures.   
+An algorithm for nicing:   
+5 - (x/5)   
+(-95/20)x + 5   
 
 
 Round-Robin Queues
@@ -45,5 +50,36 @@ Promotion to  Queue 1: Complete 20 quanta in this queue.
 Running strategy:  
 Run all processes in Queue 1, then a process from Queue 2. Once all processes in Queue 2 have run, run a process from Queue 3.
 
-Tip:  
-Have a pseudo-process that runs a process from the next queue when it's in front. (Make sure it can't move!)
+proc.c: sched
+=============
+
+If the the process's queue has only the sentinel, enqueue to head.
+Else, enqueue to tail.
+If !time_left,
+   ++quanta
+   Evaluate for promotion/demotion
+else,
+   refresh quanta
+
+proc.c: pick_proc
+=================
+
+We'll have to instantiate a sentinel process in each queue to keep track of whether or not we've completed the queue's contents.
+
+start = 1;
+for(int i = RRQ1; i <= RRQ3; i++)
+   If head[i] is sentinel...
+      Requeue it.
+      Start = ++i;
+      break;
+
+for(int i = start; i <= RRQ3; i++)
+   if(head[i] is a sentinel)
+      Requeue it.
+   else
+      Return head[i].
+
+if global variable repeat == 1
+   return (repeat = 0);
+else
+   repeat = 1; return pick_proc();
