@@ -234,7 +234,7 @@ phys_clicks clicks;		/* amount of memory requested */
          candidate_counter = 0;
          lucky_candidate = 0;
          while (hp != NIL_HOLE && hp->h_base < swap_base) {
-            if(hp->h_len >= clicks) printf("Candidate %d found: %p\n", ++candidate_counter, hp);
+            if(hp->h_len >= clicks)  ++candidate_counter;
             prev_ptr = hp;
             hp = hp->h_next;
          }
@@ -242,13 +242,11 @@ phys_clicks clicks;		/* amount of memory requested */
          hp = hole_head; prev_ptr = NIL_HOLE;
          lucky_candidate = random()%(candidate_counter);
          lucky_candidate++;
-         printf("Lucky candidate is %d\n", lucky_candidate);
          while (hp != NIL_HOLE && hp->h_base < swap_base && lucky_candidate > 0){
             if(hp->h_len >= clicks && !(--lucky_candidate)) break;
             prev_ptr = hp;
             hp = hp->h_next;
          }
-         printf("Reached candidate %p.\n", hp);
       			/* We found a hole that is big enough.  Use it. */
       			old_base = hp->h_base;	/* remember where it started */
       			hp->h_base += clicks;	/* bite a piece off */
