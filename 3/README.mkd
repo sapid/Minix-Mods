@@ -1,0 +1,13 @@
+This modification is for Minix 3.1.3a and likely will not work on other versions.
+
+It is a modest attempt to modify the memory allocation portion of the kernel to use alternative algorithms. While a clean system call is not yet implemented into unistd.h or some such header file, you can use changealloc.c to select which memory allocation algorithm you'd like to use.
+
+The default is first fit.
+Option 1: Next fit
+Option 2: Worst fit
+Option 3: Best fit
+Option 4: Random fit
+
+To install this modification, apply the custom code to /usr/src and make world from inside /usr/src, then restart.
+
+This code is fully functional!
