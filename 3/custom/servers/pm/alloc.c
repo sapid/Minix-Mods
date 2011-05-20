@@ -21,6 +21,11 @@
 #include <minix/callnr.h>
 #include <minix/type.h>
 #include <minix/config.h>
+/* CUSTOM */
+#include <minix/sysutil.h> /* For seeding srandom. */
+#include <limits.h> /* UINT_MAX - Thanks, Andy Walsh */
+#include <stdio.h> /* CUSTOM: Need this for random, srandom, printf. */
+/* END CUSTOM*/
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +36,11 @@
 #include "../../kernel/type.h"
 
 #define NIL_HOLE (struct hole *) 0
+/* CUSTOM */
+PRIVATE struct hole* last_hole_prev; /* last hole prev pointer */
+PRIVATE struct hole* last_hole; /* last hole pointer */
+PRIVATE int alloc_mech = 0; /* policy number */
+/* END CUSTOM */
 
 PRIVATE struct hole hole[_NR_HOLES];
 PRIVATE u32_t high_watermark = 0;
@@ -70,35 +80,223 @@ phys_clicks clicks;		/* amount of memory requested */
  */
   register struct hole *hp, *prev_ptr;
   phys_clicks old_base;
+  int candidate_counter = 0;
+  int lucky_candidate = 0;
+  struct hole * candidate = NIL_HOLE;
 
   do {
-        prev_ptr = NIL_HOLE;
+   prev_ptr = NIL_HOLE;
 	hp = hole_head;
-	while (hp != NIL_HOLE && hp->h_base < swap_base) {
-		if (hp->h_len >= clicks) {
-			/* We found a hole that is big enough.  Use it. */
-			old_base = hp->h_base;	/* remember where it started */
-			hp->h_base += clicks;	/* bite a piece off */
-			hp->h_len -= clicks;	/* ditto */
-
-			/* Remember new high watermark of used memory. */
-			if(hp->h_base > high_watermark)
-				high_watermark = hp->h_base;
-
-			/* Delete the hole if used up completely. */
-			if (hp->h_len == 0) del_slot(prev_ptr, hp);
-
-			/* Return the start address of the acquired block. */
-			return(old_base);
-		}
-
-		prev_ptr = hp;
-		hp = hp->h_next;
-	}
+   switch(alloc_mech){
+      default:
+      case(0): /* First fit */
+      	while (hp != NIL_HOLE && hp->h_base < swap_base) {
+      		if (hp->h_len >= clicks) {
+      			/* We found a hole that is big enough.  Use it. */
+      			old_base = hp->h_base;	/* remember where it started */
+      			hp->h_base += clicks;	/* bite a piece off */
+      			hp->h_len -= clicks;	/* ditto */
+      
+      			/* Remember new high watermark of used memory. */
+      			if(hp->h_base > high_watermark)
+      				high_watermark = hp->h_base;
+      
+      			/* Delete the hole if used up completely. */
+      			if (hp->h_len == 0) del_slot(prev_ptr, hp);
+      
+      			/* Return the start address of the acquired block. */
+               last_hole = hp;
+      			return(old_base);
+      		}
+      
+      		prev_ptr = hp;
+      		hp = hp->h_next;
+      	}
+         break;
+      case(1): /* Next fit */
+         if(last_hole == NIL_HOLE){
+            last_hole = hole_head;
+            last_hole_prev = NIL_HOLE;
+            }
+         prev_ptr = last_hole_prev;
+         hp = last_hole;
+      	while (hp != NIL_HOLE && hp->h_base < swap_base) {
+      		if (hp->h_len >= clicks) {
+      			/* We found a hole that is big enough.  Use it. */
+      			old_base = hp->h_base;	/* remember where it started */
+      			hp->h_base += clicks;	/* bite a piece off */
+      			hp->h_len -= clicks;	/* ditto */
+      
+      			/* Remember new high watermark of used memory. */
+      			if(hp->h_base > high_watermark)
+      				high_watermark = hp->h_base;
+      
+      			/* Delete the hole if used up completely. */
+      			if (hp->h_len == 0) del_slot(prev_ptr, hp);
+      
+      			/* Return the start address of the acquired block. */
+               last_hole = hp;
+      			return(old_base);
+      		}
+      
+      		prev_ptr = hp;
+      		hp = hp->h_next;
+      	}
+         hp = hole_head;
+         prev_ptr = NIL_HOLE;
+         while (hp != NIL_HOLE && hp->h_base < swap_base) {
+      		if (hp->h_len >= clicks) {
+      			/* We found a hole that is big enough.  Use it. */
+      			old_base = hp->h_base;	/* remember where it started */
+      			hp->h_base += clicks;	/* bite a piece off */
+      			hp->h_len -= clicks;	/* ditto */
+      
+      			/* Remember new high watermark of used memory. */
+      			if(hp->h_base > high_watermark)
+      				high_watermark = hp->h_base;
+      
+      			/* Delete the hole if used up completely. */
+      			if (hp->h_len == 0) del_slot(prev_ptr, hp);
+      
+      			/* Return the start address of the acquired block. */
+               last_hole = hp;
+      			return(old_base);
+      		}
+      
+      		prev_ptr = hp;
+      		hp = hp->h_next;
+      	}
+         last_hole = NIL_HOLE;
+         break;
+         /*********************/
+      case(2): /* Worst fit - not done */
+         candidate = hole_head;
+         last_hole_prev = NIL_HOLE;
+         while(hp != NIL_HOLE && hp->h_base < swap_base){
+            if(hp->h_len >= clicks && hp->h_len > candidate->h_len){
+               last_hole_prev = prev_ptr;
+               candidate = hp;
+            }
+         prev_ptr = hp;
+         hp = hp->h_next;
+         last_hole_prev = NIL_HOLE;
+         }
+         if (candidate != NIL_HOLE) {
+               hp = candidate; prev_ptr = last_hole_prev;
+      			/* We found a hole that is big enough.  Use it. */
+      			old_base = hp->h_base;	/* remember where it started */
+      			hp->h_base += clicks;	/* bite a piece off */
+      			hp->h_len -= clicks;	/* ditto */
+      
+      			/* Remember new high watermark of used memory. */
+      			if(hp->h_base > high_watermark)
+      				high_watermark = hp->h_base;
+      
+      			/* Delete the hole if used up completely. */
+      			if (hp->h_len == 0) del_slot(prev_ptr, hp);
+      
+      			/* Return the start address of the acquired block. */
+      			return(old_base);
+         }
+      
+         break;
+      case(3): /* Best fit - note done */
+         candidate = hole_head;
+         last_hole_prev = NIL_HOLE;
+         while(hp != NIL_HOLE && hp->h_base < swap_base){
+            if(hp->h_len >= clicks && hp->h_len < candidate->h_len){
+               last_hole_prev = prev_ptr;
+               candidate = hp;
+            }
+         prev_ptr = last_hole_prev;
+         hp = candidate;
+         last_hole_prev = NIL_HOLE;
+         }
+         if (candidate != NIL_HOLE) {
+               hp = candidate; prev_ptr = last_hole_prev;
+      			/* We found a hole that is big enough.  Use it. */
+      			old_base = hp->h_base;	/* remember where it started */
+      			hp->h_base += clicks;	/* bite a piece off */
+      			hp->h_len -= clicks;	/* ditto */
+      
+      			/* Remember new high watermark of used memory. */
+      			if(hp->h_base > high_watermark)
+      				high_watermark = hp->h_base;
+      
+      			/* Delete the hole if used up completely. */
+      			if (hp->h_len == 0) del_slot(prev_ptr, hp);
+      
+      			/* Return the start address of the acquired block. */
+      			return(old_base);
+         }
+         break;
+      case(4): /* Random fit - not done */
+         candidate_counter = 0;
+         lucky_candidate = 0;
+         while (hp != NIL_HOLE && hp->h_base < swap_base) {
+            if(hp->h_len >= clicks) printf("Candidate %d found: %p\n", ++candidate_counter, hp);
+            prev_ptr = hp;
+            hp = hp->h_next;
+         }
+         if(candidate_counter < 1) break;
+         hp = hole_head; prev_ptr = NIL_HOLE;
+         lucky_candidate = random()%(candidate_counter);
+         lucky_candidate++;
+         printf("Lucky candidate is %d\n", lucky_candidate);
+         while (hp != NIL_HOLE && hp->h_base < swap_base && lucky_candidate > 0){
+            if(hp->h_len >= clicks && !(--lucky_candidate)) break;
+            prev_ptr = hp;
+            hp = hp->h_next;
+         }
+         printf("Reached candidate %p.\n", hp);
+      			/* We found a hole that is big enough.  Use it. */
+      			old_base = hp->h_base;	/* remember where it started */
+      			hp->h_base += clicks;	/* bite a piece off */
+      			hp->h_len -= clicks;	/* ditto */
+      
+      			/* Remember new high watermark of used memory. */
+      			if(hp->h_base > high_watermark)
+      				high_watermark = hp->h_base;
+      
+      			/* Delete the hole if used up completely. */
+      			if (hp->h_len == 0) del_slot(prev_ptr, hp);
+      
+      			/* Return the start address of the acquired block. */
+      			return(old_base);
+         break;
+   }
   } while (swap_out());		/* try to swap some other process out */
   return(NO_MEM);
 }
-
+/*===========================================================================*
+ *				do_allocmech		     *
+ *===========================================================================*/
+PUBLIC int do_allocmech(void){
+   switch(call_nr){
+      case(PM_ALLOC_GET):
+         return alloc_mech;
+         break;
+      case(PM_ALLOC_SET):
+         if(mp->mp_effuid != SUPER_USER){
+            printf("I'm sorry, Dave. I can't let you do that.\n");
+            return EPERM;
+         }
+         if(m_in.m1_i1 < 0 || m_in.m1_i1 > 4){
+            printf("I'm sorry, Dave. I don't have that policy.\n");
+            return EINVAL;
+         }
+         if(m_in.m1_i1 == 4){
+            long random_seed = 0;
+            getuptime(&random_seed);
+            srandom(random_seed);
+         }
+         alloc_mech = m_in.m1_i1;
+         return OK;
+         break;
+      default:
+         panic(__FILE__,"Received bad signal in do_allocmech.                   fffffffuuuuuuuuuuuu--*kernel panic*", NO_NUM);
+   }
+}
 /*===========================================================================*
  *				free_mem				     *
  *===========================================================================*/

@@ -125,3 +125,5 @@ _PROTOTYPE( char *find_param, (const char *key));
 _PROTOTYPE( int proc_from_pid, (pid_t p));
 _PROTOTYPE( int pm_isokendpt, (int ep, int *proc));
 
+/* allocmech.c */
+_PROTOTYPE( int do_allocmech, (void) );

@@ -52,6 +52,9 @@
 #define CHROOT		  61 
 #define SETSID		  62
 #define GETPGRP		  63
+/* CUSTOM */
+#define PM_ALLOC_GET 64
+#define PM_ALLOC_SET 65
 
 /* Posix signal handling. */
 #define SIGACTION	  71
