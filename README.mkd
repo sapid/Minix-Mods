@@ -1,2 +1,6 @@
 This repository holds *MINIX* modifications written for exploratory purposes.
 The author is *Will Crawford*.
+
+1. This is a shell for MINIX, but the system calls may be compatible with other operating systems so long as you have the right C libraries. This has a bug with piping.
+2. This is a kernel modification that replaces the process scheduler in MINIX. It has two implementations - lottery scheduling & round-robin queue. This is buggy.
+3. This is a kernel modification that replaces the memory allocation portion of the MINIX kernel to use alternative algorithms: Next fit, Worst fit, Best fit, Random fit.
